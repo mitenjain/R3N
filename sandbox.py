@@ -21,10 +21,10 @@ def generate_2_class_moon_data():
     return X, y
 
 
-def generate_3_class_spiral_data(plot=False):
+def generate_3_class_spiral_data(nb_classes, plot=False):
     N = 100 # number of points per class
     D = 2 # dimensionality
-    K = 3 # number of classes
+    K = nb_classes  # number of classes
     X = np.zeros((N*K,D)) # data matrix (each row = single example)
     y = np.zeros(N*K, dtype='uint8') # class labels
     for j in xrange(K):
@@ -116,10 +116,12 @@ def predict(model, X):
     return np.argmax(probs, axis=1)
 
 
-def build_model1(train_data, labels, nn_hdim, reg_lambda=0.01, epsilon=0.01, num_passes=10000, print_loss=False):
+def build_model1(train_data, nb_classes, labels, nn_hdim, reg_lambda=0.01, epsilon=0.01, num_passes=10000,
+                 print_loss=False):
     # input dimensions is the size of the rows
     nn_input_dim = len(train_data[0, :])
-    nn_output_dim = len(train_data[0, :])
+
+    nn_output_dim = nb_classes
 
     num_examples = len(train_data)
     assert(num_examples == len(labels))
@@ -189,6 +191,10 @@ def build_model1(train_data, labels, nn_hdim, reg_lambda=0.01, epsilon=0.01, num
         if print_loss and i % 1000 == 0:
             print "Loss after iteration %i: %f" %(i, calculate_loss(model=model, input_data=train_data,
                                                                     labels=labels))
+    a1 = np.tanh(train_data.dot(W1) + b1)
+    scores = np.dot(a1, W2) + b2
+    predicted_class = np.argmax(scores, axis=1)
+    print "training accuracy: %0.2f" % (np.mean(predicted_class == labels))
 
     return model
 
@@ -267,8 +273,8 @@ def build_model2(input_data, labels, nb_classes, nn_hidden_dim):
 
     hidden_layer = np.maximum(0, np.dot(X, W) + b)
     scores = np.dot(hidden_layer, W2) + b2
-    precicted_class = np.argmax(scores, axis=1)
-    print "training accuracy: %0.2f" % (np.mean(precicted_class == labels))
+    predicted_class = np.argmax(scores, axis=1)
+    print "training accuracy: %0.2f" % (np.mean(predicted_class == labels))
 
 
     h = 0.02
@@ -289,8 +295,12 @@ def build_model2(input_data, labels, nb_classes, nn_hidden_dim):
     return model
 
 
-X, y = generate_3_class_spiral_data(plot=False)
-m = build_model2(X, y, 3, 50)
+X, y = generate_3_class_spiral_data(nb_classes=3, plot=False)
+
+#m = build_model2(X, y, 3, 50)
+m = build_model1(train_data=X, labels=y, nb_classes=3, nn_hdim=50, print_loss=True)
+plot_decision_boundary(lambda x: predict(m, x), X, y)
+
 
 
 

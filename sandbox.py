@@ -40,7 +40,8 @@ def generate_3_class_spiral_data(plot=False):
 
     return X, y
 
-def plot_decision_boundary(pred_func):
+
+def plot_decision_boundary(pred_func, X, labels):
     # Set min and max values and give it some padding
     x_min, x_max = X[:, 0].min() - .5, X[:, 0].max() + .5
     y_min, y_max = X[:, 1].min() - .5, X[:, 1].max() + .5
@@ -52,17 +53,18 @@ def plot_decision_boundary(pred_func):
     Z = Z.reshape(xx.shape)
     # Plot the contour and training examples
     plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
-    plt.scatter(X[:, 0], X[:, 1], c=y, cmap=plt.cm.Spectral)
+    plt.scatter(X[:, 0], X[:, 1], c=labels, cmap=plt.cm.Spectral)
+    plt.show()
 
 
-def calculate_loss(model, X, reg_lambda=0.01):
-    num_examples = len(X)
+def calculate_loss(model, input_data, labels, reg_lambda=0.01):
+    num_examples = len(input_data)
 
     W1, b1, W2, b2 = model['W1'], model['b1'], model['W2'], model['b2']
 
     # Forward propagation to calculate our predictions
     # layer 1
-    z1 = X.dot(W1) + b1  # input to layer 1
+    z1 = input_data.dot(W1) + b1  # input to layer 1
     a1 = np.tanh(z1)  # output from layer 1
 
     # input to layer 2
@@ -73,12 +75,12 @@ def calculate_loss(model, X, reg_lambda=0.01):
     probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
     # Calculating the loss
-    corect_logprobs = -np.log(probs[range(num_examples), y])
+    corect_logprobs = -np.log(probs[range(num_examples), labels])
     data_loss = np.sum(corect_logprobs)
 
     # Add regulatization term to loss (optional)
-    data_loss += reg_lambda/2 * (np.sum(np.square(W1)) + np.sum(np.square(W2)))
-    return 1./num_examples * data_loss
+    data_loss += reg_lambda / 2 * (np.sum(np.square(W1)) + np.sum(np.square(W2)))
+    return float(1. / num_examples * data_loss)
 
 
 def predict(model, X):
@@ -114,8 +116,6 @@ def build_model(train_data, labels, nn_hdim, reg_lambda=0.01, epsilon=0.01, num_
     W2 = np.random.randn(nn_hdim, nn_output_dim) / np.sqrt(nn_hdim)
     b2 = np.zeros((1, nn_output_dim))
 
-    #print "initial random params\n W1",W1,"\n","b1", b1,"\n", "W2", W2,"\n", "b2", b2,"\n"
-
     # This is what we return at the end
     model = {}
 
@@ -124,7 +124,7 @@ def build_model(train_data, labels, nn_hdim, reg_lambda=0.01, epsilon=0.01, num_
         ## Forward propagation ##
 
         # input to layer 1 is X * W1 + b
-        z1 = X.dot(W1) + b1
+        z1 = train_data.dot(W1) + b1
 
         # transform with activation function
         a1 = np.tanh(z1)
@@ -134,26 +134,21 @@ def build_model(train_data, labels, nn_hdim, reg_lambda=0.01, epsilon=0.01, num_
 
         # get the scores
         exp_scores = np.exp(z2)
+
         # normalize
         probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
 
         ## Backpropagation ##
         delta3 = probs
 
-        #for a, b in zip(delta3, y):
-        #    print b, a
-
         # figure out how much we missed by. if the prob was 1 for the correct label then that
         # entry in delta3 will now be 0, otherwise it reflects how much error and in what direction
-        delta3[range(num_examples), y] -= 1
-
-        #print "after change\n"
-        #print delta3
+        delta3[range(num_examples), labels] -= 1
 
         dW2 = (a1.T).dot(delta3)
         db2 = np.sum(delta3, axis=0, keepdims=True)
         delta2 = delta3.dot(W2.T) * (1 - np.power(a1, 2))
-        dW1 = np.dot(X.T, delta2)
+        dW1 = np.dot(train_data.T, delta2)
         db1 = np.sum(delta2, axis=0)
 
         # Add regularization terms (b1 and b2 don't have regularization terms)
@@ -167,15 +162,18 @@ def build_model(train_data, labels, nn_hdim, reg_lambda=0.01, epsilon=0.01, num_
         b2 += -epsilon * db2
 
         # Assign new parameters to the model
-        model = { 'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
+        model = {'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
 
         # Optionally print the loss.
         # This is expensive because it uses the whole dataset, so we don't want to do it too often.
         if print_loss and i % 1000 == 0:
-            print "Loss after iteration %i: %f" %(i, calculate_loss(model=model, X=train_data))
+            print "Loss after iteration %i: %f" %(i, calculate_loss(model=model, input_data=train_data,
+                                                                    labels=labels))
 
     return model
 
 
 
-generate_3_class_spiral_data(plot=True)
+X, y = generate_2_class_moon_data()
+model = build_model(X, y, 3, print_loss=True)
+plot_decision_boundary(lambda x: predict(model, x), X, y)

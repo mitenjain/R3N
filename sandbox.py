@@ -302,8 +302,9 @@ X, y = generate_3_class_spiral_data(nb_classes=3, plot=False)
 #m = build_model1(train_data=X, labels=y, nb_classes=3, nn_hdim=50, print_loss=True)
 #plot_decision_boundary(lambda x: predict(m, x), X, y)
 
-net = NeuralNetwork([2, 100, 3])
+net = NeuralNetwork([2, 50, 3])
 net.fit(X, y, print_loss=True)
+#net.build_model1(X, 3, y, 50, print_loss=True)
 
 
 

@@ -156,6 +156,10 @@ class NeuralNetwork(object):
                 model = {'W1': W1, 'b1': b1, 'W2': W2, 'b2': b2}
                 print "Loss after iteration %i: %f" % (i, calculate_loss2(model=model, input_data=samples,
                                                                           labels=labels))
+        a1 = np.tanh(samples.dot(self.weights[0]) + self.biases[0])
+        scores = np.dot(a1, self.weights[1]) + self.biases[1]
+        predict = np.argmax(scores, axis=1)
+        print "training accuracy: %0.2f" % (np.mean(predict == labels))
 
 
     def build_model1(self, train_data, nb_classes, labels, nn_hdim, reg_lambda=0.01, epsilon=0.01, num_passes=10000,

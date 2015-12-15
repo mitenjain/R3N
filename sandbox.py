@@ -10,6 +10,7 @@ import sklearn
 import sklearn.datasets
 import sklearn.linear_model
 import matplotlib
+from neural_network import *
 
 
 def generate_2_class_moon_data():
@@ -298,9 +299,11 @@ def build_model2(input_data, labels, nb_classes, nn_hidden_dim):
 X, y = generate_3_class_spiral_data(nb_classes=3, plot=False)
 
 #m = build_model2(X, y, 3, 50)
-m = build_model1(train_data=X, labels=y, nb_classes=3, nn_hdim=50, print_loss=True)
-plot_decision_boundary(lambda x: predict(m, x), X, y)
+#m = build_model1(train_data=X, labels=y, nb_classes=3, nn_hdim=50, print_loss=True)
+#plot_decision_boundary(lambda x: predict(m, x), X, y)
 
+net = NeuralNetwork([2, 100, 3])
+net.fit(X, y, print_loss=True)
 
 
 

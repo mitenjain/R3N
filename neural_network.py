@@ -19,11 +19,11 @@ class NeuralNetwork(object):
         self.layers = len(hidden_dims) + 2
         dimensions = [input_dim] + hidden_dims + [nb_classes]
         np.random.seed(0)
-        self.weights = [np.random.randn(x, y) / np.sqrt(x) for x, y, in zip(dimensions[:-1], dimensions[1:])]
+        self.weights = [np.random.randn(x, y) / np.sqrt(x) for x, y, in izip(dimensions[:-1], dimensions[1:])]
         self.biases = [np.zeros((1, y)) for y in dimensions[1:]]
         self.activation = activation_function
 
-    def predict(self, X):
+    def predict_old(self, X):
         activation = X
         z = None
         # forward pass
@@ -36,25 +36,51 @@ class NeuralNetwork(object):
 
         return probs
 
+    def predict(self, x):
+        activation = x
+        z = None
+        # forward pass
+        i = 1
+        for bias, weight in izip(self.biases, self.weights):
+            z = np.dot(activation, weight) + bias   # calculate input
+            # if we're in the hidden layer use the activation function
+            if i < len(self.weights):
+                activation = self.activation(z, False)  # put though activation function
+                i += 1
+                continue
+            # if we're at the final 'output' layer, use the softmax
+            else:
+                assert (i == len(self.weights))
+                exp_scores = np.exp(z)
+                probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+                return probs
+
     def fit(self, samples, labels, epochs=10000, epsilon=0.01, lbda=0.01, print_loss=False):
-        for i in xrange(0, epochs):
+        for e in xrange(0, epochs):
             # first do the forward pass, keeping track of everything
             zs = []                       # list to store z vectors
             activation = samples          # initialize to input data
             activations = [samples, ]     # list to store activations
 
+            i = 1
             for bias, weight in izip(self.biases, self.weights):
                 z = np.dot(activation, weight) + bias   # calculate input
                 zs.append(z)                            # keep track
-                activation = self.activation(z, False)  # put though activation function
-                activations.append(activation)          # keep track
+                if i < len(self.weights):
+                    activation = self.activation(z, False)  # put though activation function
+                    activations.append(activation)          # keep track
+                    i += 1
+                    continue
+                else:
+                    activation = np.exp(z)
+                    activations.append(activation)
 
-            # get softmax from final layer input
-            exp_scores = np.exp(zs[-1])
-            probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+            # get softmax from final layer output
+            probs = activations[-1] / np.sum(activations[-1], axis=1, keepdims=True)
 
             # backward pass
             delta = self.cost_derivate(probs, labels)
+
             # place to store gradients
             grad_w = [np.zeros(w.shape) for w in self.weights]
             grad_b = [np.zeros(b.shape) for b in self.biases]
@@ -76,10 +102,10 @@ class NeuralNetwork(object):
             self.weights = [w + -epsilon * dw for w, dw in izip(self.weights, grad_w)]
             self.biases = [b + -epsilon * db for b, db in izip(self.biases, grad_b)]
 
-            if print_loss and i % 1000 == 0:
+            if print_loss and e % 1000 == 0:
                 loss = self.calculate_loss(samples, labels)
                 accuracy = self.evaluate(samples, labels)
-                print "Loss after iteration %i: %f accuracy: %0.2f" % (i, loss, accuracy)
+                print "Loss after iteration %i: %f accuracy: %0.2f" % (e, loss, accuracy)
 
         print "training accuracy: %0.2f" % self.evaluate(samples, labels)
 

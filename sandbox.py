@@ -2,15 +2,22 @@
 
 from toy_datasets import *
 from neural_network import *
-from activation_functions import hyperbolic_tangent
+from activation_functions import *
 
 # generating test data
 #X, y = generate_2_class_moon_data()
 #X2, y2 = generate_2_class_moon_data()
-#X, y = generate_3_class_spiral_data(nb_classes=3, theta=0.8, plot=False)
-#X2, y2 = generate_3_class_spiral_data(nb_classes=3, plot=False)
+#X, Y = generate_3_class_spiral_data(nb_classes=3, theta=0.2, plot=False)
+#X2, Y2 = generate_3_class_spiral_data(nb_classes=3, theta=0.2, plot=False)
 #X, y = load_iris_dataset()
+
+# digit dataset
 train, test = load_digit_dataset(500, 0.25)
+X = np.array([x[0] for x in train])
+Y = [y[1] for y in train]
+X2 = np.array([x[0] for x in test])
+Y2 = [y[1] for y in test]
+
 
 # running demo models
 #m = build_model2(X, y, 3, 50)
@@ -20,20 +27,19 @@ train, test = load_digit_dataset(500, 0.25)
 # testing library
 # todo make these unit tests
 #net = NeuralNetwork([2, 10, 2], hyperbolic_tangent)
-X = np.array([x[0] for x in train])
-Y = [y[1] for y in train]
-X2 = np.array([x[0] for x in test])
-Y2 = [y[1] for y in test]
 
 net = NeuralNetwork(input_dim=X.shape[1],
                     nb_classes=len(set(Y)),
-                    hidden_dims=[10],
+                    hidden_dims=[50],
                     activation_function=hyperbolic_tangent)
-net.fit(X, Y, epochs=10000, epsilon=0.001, lbda=0.001, print_loss=True)
+net.fit(X, Y, epochs=5000, epsilon=0.001, lbda=0.00, print_loss=True)
 t = net.evaluate(X2, Y2)
+#print net.predict_old(X2)[1:10]
+#print net.predict(X2)[1:10]
+#print net.predict_old(X2)[1:10] == net.predict(X2)[1:10]
 #plot_decision_boundary(lambda x: np.argmax(net.predict(x), axis=1),
-#                       X, y)
-print t
+#                       X, Y)
+#print t
 
 
 

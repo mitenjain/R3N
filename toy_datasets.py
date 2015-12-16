@@ -21,8 +21,8 @@ def load_digit_dataset(dataset_size, split):
     whole_dataset = zip(X, y)
     shuffle(whole_dataset)
     whole_dataset = whole_dataset[:dataset_size]
-    train_dataset = whole_dataset[:int(dataset_size * split)]
-    test_dataset = whole_dataset[int(dataset_size * split):]
+    train_dataset = whole_dataset[:int(dataset_size * (1 - split))]
+    test_dataset = whole_dataset[int(dataset_size * (1 - split)):]
 
     return train_dataset, test_dataset
 

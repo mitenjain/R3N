@@ -23,8 +23,8 @@ class NeuralNetwork(object):
         self.biases = [np.zeros((1, y)) for y in dimensions[1:]]
         self.activation = activation_function
 
-    def predict(self, a):
-        activation = a
+    def predict(self, X):
+        activation = X
         z = None
         # forward pass
         for bias, weight in izip(self.biases, self.weights):

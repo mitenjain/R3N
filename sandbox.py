@@ -11,6 +11,21 @@ import sklearn.datasets
 import sklearn.linear_model
 import matplotlib
 from neural_network import *
+from activation_functions import hyperbolic_tangent
+
+
+def load_iris_dataset():
+    data = sklearn.datasets.load_iris()
+    X = data.data
+    y = data.target
+    return X, y
+
+
+def load_digit_dataset(how_much):
+    data = sklearn.datasets.load_digits()
+    X = data.data[:how_much]
+    y = data.target[:how_much]
+    return X, y
 
 
 def generate_2_class_moon_data():
@@ -295,16 +310,24 @@ def build_model2(input_data, labels, nb_classes, nn_hidden_dim):
 
     return model
 
+# generating test data
+X, y = generate_2_class_moon_data()
+#X, y = generate_3_class_spiral_data(nb_classes=3, plot=False)
+#X2, y2 = generate_3_class_spiral_data(nb_classes=3, plot=False)
+#X, y = load_iris_dataset()
+#X, y = load_digit_dataset(300)
 
-X, y = generate_3_class_spiral_data(nb_classes=3, plot=False)
-
+# running demo models
 #m = build_model2(X, y, 3, 50)
-#m = build_model1(train_data=X, labels=y, nb_classes=3, nn_hdim=50, print_loss=True)
+#m = build_model1(train_data=X, labels=y, nb_classes=10, nn_hdim=50, print_loss=True)
 #plot_decision_boundary(lambda x: predict(m, x), X, y)
 
-net = NeuralNetwork([2, 50, 3])
+# testing library
+# todo make these unit tests
+net = NeuralNetwork([2, 10, 2], hyperbolic_tangent)
 net.fit(X, y, print_loss=True)
-#net.build_model1(X, 3, y, 50, print_loss=True)
+
+
 
 
 

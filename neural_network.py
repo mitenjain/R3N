@@ -55,7 +55,13 @@ class NeuralNetwork(object):
                 probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
                 return probs
 
-    def fit(self, samples, labels, epochs=10000, epsilon=0.01, lbda=0.01, print_loss=False):
+    def update_parameters(self, grad_weights, grad_biases, epsilon):
+        # update based on learning rate (epsilon)
+        self.weights = [w + -epsilon * dw for w, dw in izip(self.weights, grad_weights)]
+        self.biases = [b + -epsilon * db for b, db in izip(self.biases, grad_biases)]
+
+    def fit(self, samples, labels, batch=False, epochs=10000, epsilon=0.01, lbda=0.01, print_loss=False):
+        print "before training accuracy: %0.2f" % self.evaluate(samples, labels)
         for e in xrange(0, epochs):
             # first do the forward pass, keeping track of everything
             zs = []                       # list to store z vectors
@@ -98,16 +104,23 @@ class NeuralNetwork(object):
             # regularize the gradient on the weights
             grad_w = [gw + lbda * w for gw, w in izip(grad_w, self.weights)]
 
+            if batch is True:
+                return grad_w, grad_b
+
+            self.update_parameters(grad_w, grad_b, epsilon)
             # update based on learning rate (epsilon)
-            self.weights = [w + -epsilon * dw for w, dw in izip(self.weights, grad_w)]
-            self.biases = [b + -epsilon * db for b, db in izip(self.biases, grad_b)]
+            #self.weights = [w + -epsilon * dw for w, dw in izip(self.weights, grad_w)]
+            #self.biases = [b + -epsilon * db for b, db in izip(self.biases, grad_b)]
 
             if print_loss and e % 1000 == 0:
                 loss = self.calculate_loss(samples, labels)
                 accuracy = self.evaluate(samples, labels)
                 print "Loss after iteration %i: %f accuracy: %0.2f" % (e, loss, accuracy)
 
-        print "training accuracy: %0.2f" % self.evaluate(samples, labels)
+        print "after training accuracy: %0.2f" % self.evaluate(samples, labels)
+
+    def mini_batch_sgd(self, ):
+        pass
 
     def cost_derivate(self, output_probs, labels):
         output_probs[range(len(labels)), labels] -= 1

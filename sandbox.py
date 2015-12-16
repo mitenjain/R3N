@@ -5,8 +5,8 @@ from neural_network import *
 from activation_functions import *
 
 # generating test data
-#X, y = generate_2_class_moon_data()
-#X2, y2 = generate_2_class_moon_data()
+#X, Y = generate_2_class_moon_data()
+#X2, Y2 = generate_2_class_moon_data()
 #X, Y = generate_3_class_spiral_data(nb_classes=3, theta=0.2, plot=False)
 #X2, Y2 = generate_3_class_spiral_data(nb_classes=3, theta=0.2, plot=False)
 #X, y = load_iris_dataset()
@@ -30,9 +30,9 @@ Y2 = [y[1] for y in test]
 
 net = NeuralNetwork(input_dim=X.shape[1],
                     nb_classes=len(set(Y)),
-                    hidden_dims=[50],
+                    hidden_dims=[10],
                     activation_function=hyperbolic_tangent)
-net.fit(X, Y, epochs=5000, epsilon=0.001, lbda=0.00, print_loss=True)
+net.fit(X, Y, epochs=5000, epsilon=0.0001, lbda=0.0001, print_loss=True)
 t = net.evaluate(X2, Y2)
 #print net.predict_old(X2)[1:10]
 #print net.predict(X2)[1:10]

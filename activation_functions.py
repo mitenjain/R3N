@@ -19,3 +19,12 @@ def soft_plus(z, deriv=False):
         return 1.0 / (1 + np.exp(-z))
     else:
         return np.log(1 + np.exp(z))
+
+
+def sigmoid(z, deriv=False):
+    def sig(x):
+        return 1.0 / (1 + np.exp(-x))
+    if deriv is True:
+        return sig(z) * (1 - sig(z))
+    else:
+        return sig(z)

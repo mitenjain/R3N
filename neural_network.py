@@ -13,9 +13,11 @@ from itertools import izip
 class NeuralNetwork(object):
     """[3], [2]
     """
-    def __init__(self, dimensions, activation_function):
+    def __init__(self, input_dim, nb_classes, hidden_dims, activation_function):
         # eg. dimensions = [2, 10, 3] makes a 2-input, 10 hidden, 3 output NN
-        self.layers = len(dimensions)
+        # number of layers is the hidden node depth plus the input and output layers
+        self.layers = len(hidden_dims) + 2
+        dimensions = [input_dim] + hidden_dims + [nb_classes]
         np.random.seed(0)
         self.weights = [np.random.randn(x, y) / np.sqrt(x) for x, y, in zip(dimensions[:-1], dimensions[1:])]
         self.biases = [np.zeros((1, y)) for y in dimensions[1:]]

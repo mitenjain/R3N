@@ -55,7 +55,9 @@ c_path = "../marginAlign/cPecan/tests/test_alignments/c100/tempFiles_alignment/"
 mc_path = "../marginAlign/cPecan/tests/test_alignments/mc100/tempFiles_alignment/"
 hmc_path = "../marginAlign/cPecan/tests/test_alignments/hmc100/tempFiles_alignment/"
 
-classify_with_network(c_path, mc_path, hmc_path, True, 62, 0.75, 5, 10000, 1000, ReLU, "./")
+cull_motif_features(747, tsv, True)
+
+#classify_with_network(c_path, mc_path, hmc_path, True, 62, 0.75, 5, 10000, 1000, ReLU, "./")
 
 
 

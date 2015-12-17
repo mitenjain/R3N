@@ -16,7 +16,7 @@ def get_motif_range(ref_start, forward, reference_length=891):
         return complement_motif_range
 
 
-def cull_motif_features(start, tsv, forward):
+def cull_motif_features(start, tsv, forward, zero_center=True):
     # load the tsv
     data = np.loadtxt(tsv, dtype=str)
     motif_range = get_motif_range(start, forward)
@@ -54,6 +54,12 @@ def cull_motif_features(start, tsv, forward):
                 feature_vector[vector_index] = delta_mean
                 feature_vector[vector_index + 1] = posterior
                 feature_posteriors[e_index] = posterior
+
+    if zero_center is True:
+        feature_mean = np.mean([feature_vector[i] for i in xrange(0, len(feature_vector), 2) if feature_vector[i] != 0])
+        for i in xrange(0, len(feature_vector), 2):
+            if feature_vector[i] != 0.0:
+                feature_vector[i] -= feature_mean
 
     return feature_vector
 

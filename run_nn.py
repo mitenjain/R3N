@@ -72,8 +72,8 @@ def main(args):
 
     print >> sys.stdout, start_message
 
-    motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-    #motifs = [747, 354]
+    #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+    motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()

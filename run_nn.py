@@ -41,6 +41,8 @@ def parse_args():
                         default=0.9, type=float, help="train/test split")
     parser.add_argument('--print_loss', '-lo', action='store_true', dest='print_loss',
                         default=False, help='print loss during training?')
+    parser.add_argument('--no_center', action='store_true', required=False, default=False,
+                        dest='center', help="flag to disable data centering")
     parser.add_argument('--output_location', '-o', action='store', dest='out',
                         required=True, type=str, default=None,
                         help="directory to put results")
@@ -98,6 +100,7 @@ def main(args):
             "hidden_shape": [10],
             "print_loss": args.print_loss,
             "out_path": args.out,
+            "center_data": args.center,
         }
         #classify_with_network(**nn_args)  # activate for debugging
         work_queue.put(nn_args)

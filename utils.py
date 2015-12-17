@@ -64,7 +64,7 @@ def cull_motif_features(start, tsv, forward, zero_center=True):
     return feature_vector
 
 
-def collect_data_vectors(path, forward, labels, label, portion, motif_start, max_samples):
+def collect_data_vectors(path, forward, labels, label, portion, motif_start, max_samples, center_data):
     """collects the training data
     """
     # collect the files
@@ -88,12 +88,12 @@ def collect_data_vectors(path, forward, labels, label, portion, motif_start, max
     test_data = np.zeros([len(tsvs) - split_index, 12])
 
     for i, f in enumerate(tsvs[:split_index]):
-        vector = cull_motif_features(motif_start, path + f, forward)
+        vector = cull_motif_features(motif_start, path + f, forward, center_data)
         train_data[i:i + 1] = vector
         labels.append(label)  # TODO move this out of the function
 
     for i, f in enumerate(tsvs[split_index:]):
-        vector = cull_motif_features(motif_start, path + f, forward)
+        vector = cull_motif_features(motif_start, path + f, forward, center_data)
         test_data[i:i+1] = vector
 
     return train_data, labels, test_data
@@ -110,7 +110,7 @@ def shuffle_and_maintain_labels(data, labels):
 
 
 def classify_with_network(c_alignments, mc_alignments, hmc_alignments,
-                          forward, motif_start_position,
+                          forward, motif_start_position, center_data,
                           train_test_split, iterations, epochs, max_samples, mini_batch,
                           activation_function, epsilon, lbda, hidden_shape, print_loss,
                           out_path):
@@ -127,11 +127,14 @@ def classify_with_network(c_alignments, mc_alignments, hmc_alignments,
     for i in xrange(iterations):
         labels = []
         c_train, labels, c_test = collect_data_vectors(c_alignments, forward, labels, 0,
-                                                       train_test_split, motif_start_position, max_samples)
+                                                       train_test_split, motif_start_position,
+                                                       max_samples, center_data)
         mc_train, labels, mc_test = collect_data_vectors(mc_alignments, forward, labels, 1,
-                                                         train_test_split, motif_start_position, max_samples)
+                                                         train_test_split, motif_start_position,
+                                                         max_samples, center_data)
         hmc_train, labels, hmc_test = collect_data_vectors(hmc_alignments, forward, labels, 2,
-                                                           train_test_split, motif_start_position, max_samples)
+                                                           train_test_split, motif_start_position,
+                                                           max_samples, center_data)
 
         training_data = np.vstack((c_train, mc_train, hmc_train))
 

@@ -67,9 +67,11 @@ def main(args):
 #    Looking at {nbFiles} files.
 #    Forward mapped strand: {forward}.
 #    Iterations: {iter}.
+#    Epochs: {epochs}
+#    Data centering: {center}
 #    Train/test split: {train_test}
 #    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
-                                train_test=args.split, out=args.out,
+                                train_test=args.split, out=args.out, epochs=args.epochs, center=args.center,
                                 cmd=" ".join(sys.argv[:]))
 
     print >> sys.stdout, start_message

@@ -12,7 +12,7 @@ from activation_functions import *
 #X, y = load_iris_dataset()
 
 # digit dataset
-train, test = load_digit_dataset(500, 0.25)
+train, test = load_digit_dataset(500, 0.1)
 X = np.array([x[0] for x in train])
 Y = [y[1] for y in train]
 X2 = np.array([x[0] for x in test])
@@ -32,7 +32,16 @@ net = NeuralNetwork(input_dim=X.shape[1],
                     nb_classes=len(set(Y)),
                     hidden_dims=[10],
                     activation_function=hyperbolic_tangent)
-net.fit(X, Y, epochs=5000, epsilon=0.0001, lbda=0.0001, print_loss=True)
+
+net.mini_batch_sgd(training_data=X,
+                   labels=Y,
+                   epochs=2000,
+                   batch_size=50,
+                   epsilon=0.0001,
+                   lbda=0.0001)
+
+
+#net.fit(X, Y, epochs=5000, epsilon=0.0001, lbda=0.0001, print_loss=True)
 t = net.evaluate(X2, Y2)
 #print net.predict_old(X2)[1:10]
 #print net.predict(X2)[1:10]

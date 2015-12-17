@@ -5,10 +5,10 @@ Citations
 [2]http://nbviewer.ipython.org/github/dennybritz/nn-from-scratch/blob/master/nn-from-scratch.ipynb
 [3]https://github.com/mnielsen/neural-networks-and-deep-learning
 """
-
+from __future__ import print_function
 import numpy as np
+import sys
 from itertools import izip
-from random import shuffle
 
 
 class NeuralNetwork(object):
@@ -106,13 +106,14 @@ class NeuralNetwork(object):
 
         return grad_w, grad_b
 
-    def fit(self, samples, labels, epochs=10000, epsilon=0.01, lbda=0.01, print_loss=False):
-        print "before training accuracy: %0.2f" % self.evaluate(samples, labels)
+    def fit(self, training_data, labels, epochs=10000, epsilon=0.01, lbda=0.01, print_loss=False):
+        if print_loss is True:
+            print("before training accuracy: %0.2f" % self.evaluate(training_data, labels), file=sys.stderr)
         for e in xrange(0, epochs):
             # first do the forward pass, keeping track of everything
             zs = []                       # list to store z vectors
-            activation = samples          # initialize to input data
-            activations = [samples, ]     # list to store activations
+            activation = training_data          # initialize to input data
+            activations = [training_data, ]     # list to store activations
 
             i = 1
             for bias, weight in izip(self.biases, self.weights):
@@ -156,19 +157,17 @@ class NeuralNetwork(object):
             #self.biases = [b + -epsilon * db for b, db in izip(self.biases, grad_b)]
 
             if print_loss and e % 1000 == 0:
-                loss = self.calculate_loss(samples, labels)
-                accuracy = self.evaluate(samples, labels)
-                print "Loss after iteration %i: %f accuracy: %0.2f" % (e, loss, accuracy)
+                loss = self.calculate_loss(training_data, labels)
+                accuracy = self.evaluate(training_data, labels)
+                print("Loss after iteration %i: %f accuracy: %0.2f" % (e, loss, accuracy), file=sys.stderr)
+        if print_loss is True:
+            print("after training accuracy: %0.2f" % self.evaluate(training_data, labels), file=sys.stderr)
 
-        print "after training accuracy: %0.2f" % self.evaluate(samples, labels)
-
-    def mini_batch_sgd(self, training_data, labels, epochs, batch_size, epsilon=0.01, lbda=0.01):
+    def mini_batch_sgd(self, training_data, labels, epochs, batch_size, epsilon=0.01, lbda=0.01, print_loss=False):
         # place to store gradients
         whole_dataset = zip(training_data, labels)
 
         for e in xrange(0, epochs):
-            # shuffle the training data and make mini-batches
-            shuffle(whole_dataset)
             n = len(whole_dataset)
             batches = [whole_dataset[k:k + batch_size] for k in xrange(0, n, batch_size)]
 
@@ -186,9 +185,9 @@ class NeuralNetwork(object):
                 # update the parameters for this batch
                 self.update_parameters(grad_w, grad_b, epsilon=epsilon)
 
-            if e % 500 == 0:
+            if e % 500 == 0 and print_loss == True:
                 loss, accuracy = self.calculate_loss_and_accuracy(training_data, labels)
-                print "Loss after iteration %i: %f accuracy: %0.2f" % (e, loss, accuracy)
+                print("Loss after iteration %i: %f accuracy: %0.2f" % (e, loss, accuracy), file=sys.stderr)
 
     def cost_derivate(self, output_probs, labels):
         output_probs[range(len(labels)), labels] -= 1

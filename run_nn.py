@@ -29,10 +29,18 @@ def parse_args():
                         default=4, type=int, help="number of jobs to run concurrently")
     parser.add_argument('--iter', '-i', action='store', dest='iter', required=False,
                         default=2, type=int, help="number of iterations to do")
-    parser.add_argument('--epochs', '-e', action='store', dest='epochs', required=False,
+    parser.add_argument('--epochs', '-ep', action='store', dest='epochs', required=False,
                         default=10000, type=int, help="number of iterations to do")
+    parser.add_argument('--mini_batch', '-b', action='store', dest='mini_batch', required=False, type=int,
+                        default=None, help='specify size of mini-batches for mini-batch training')
+    parser.add_argument('--epsilon', '-e', action='store', dest='epsilon',
+                        required=False, default=0.01, type=float)
+    parser.add_argument('--lambda', '-l', action='store', dest='lbda', required=False,
+                        default=0.01, type=float)
     parser.add_argument('--train_test', '-s', action='store', dest='split', required=False,
                         default=0.9, type=float, help="train/test split")
+    parser.add_argument('--print_loss', '-lo', action='store_true', dest='print_loss',
+                        default=False, help='print loss during training?')
     parser.add_argument('--output_location', '-o', action='store', dest='out',
                         required=True, type=str, default=None,
                         help="directory to put results")
@@ -52,19 +60,20 @@ def main(args):
     args = parse_args()
 
     start_message = """
-    Command line: {cmd}
-    Starting Neural Net analysis.
-    Looking at {nbFiles} files.
-    Forward mapped strand: {forward}.
-    Iterations: {iter}.
-    Train/test split: {train_test}
-    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
-                               train_test=args.split, out=args.out,
-                               cmd=" ".join(sys.argv[:]))
+#    Command line: {cmd}
+#    Starting Neural Net analysis.
+#    Looking at {nbFiles} files.
+#    Forward mapped strand: {forward}.
+#    Iterations: {iter}.
+#    Train/test split: {train_test}
+#    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
+                                train_test=args.split, out=args.out,
+                                cmd=" ".join(sys.argv[:]))
 
-    print >> sys.stderr, start_message
+    print >> sys.stdout, start_message
 
     motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+    #motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()
@@ -82,9 +91,15 @@ def main(args):
             "iterations": args.iter,
             "epochs": args.epochs,
             "max_samples": args.nb_files,
+            "mini_batch": args.mini_batch,
             "activation_function": hyperbolic_tangent,
+            "epsilon": args.epsilon,
+            "lbda": args.lbda,
+            "hidden_shape": [10],
+            "print_loss": args.print_loss,
             "out_path": args.out,
         }
+        #classify_with_network(**nn_args)  # activate for debugging
         work_queue.put(nn_args)
 
     for w in xrange(workers):

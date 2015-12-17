@@ -4,7 +4,7 @@
 from __future__ import print_function
 import os
 from neural_network import *
-
+from random import shuffle
 
 def get_motif_range(ref_start, forward, reference_length=891):
     kmer_length = 6
@@ -103,8 +103,11 @@ def shuffle_and_maintain_labels(data, labels):
     return np.asarray(X), y
 
 
-def classify_with_network(c_alignments, mc_alignments, hmc_alignments, forward, motif_start_position,
-                          train_test_split, iterations, epochs, max_samples, activation_function, out_path):
+def classify_with_network(c_alignments, mc_alignments, hmc_alignments,
+                          forward, motif_start_position,
+                          train_test_split, iterations, epochs, max_samples, mini_batch,
+                          activation_function, epsilon, lbda, hidden_shape, print_loss,
+                          out_path):
     if forward:
         direction_label = ".forward"
     else:
@@ -133,8 +136,22 @@ def classify_with_network(c_alignments, mc_alignments, hmc_alignments, forward, 
                             hidden_dims=[10],
                             activation_function=activation_function)
 
-        #net.fit(samples=X, labels=y, epochs=10000, epsilon=0.0001, lbda=0.0001, print_loss=True)
-        net.mini_batch_sgd(X, y, 5000, 10, 0.01, 0.01)
+        if mini_batch is not None:
+            net.mini_batch_sgd(training_data=X,
+                               labels=y,
+                               epochs=epochs,
+                               batch_size=mini_batch,
+                               epsilon=epsilon,
+                               lbda=lbda,
+                               print_loss=print_loss)
+
+        else:
+            net.fit(training_data=X,
+                    labels=y,
+                    epochs=epochs,
+                    epsilon=epsilon,
+                    lbda=lbda,
+                    print_loss=print_loss)
 
         c_targets = np.zeros(len(c_test))
 

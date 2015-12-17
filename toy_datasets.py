@@ -37,7 +37,7 @@ def generate_2_class_moon_data(size=300, noise=0.1):
 
 
 def generate_3_class_spiral_data(nb_classes, theta=0.2, plot=False):
-    N = 100 # number of points per class
+    N = 200 # number of points per class
     D = 2 # dimensionality
     K = nb_classes  # number of classes
     X = np.zeros((N*K,D)) # data matrix (each row = single example)

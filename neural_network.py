@@ -189,7 +189,7 @@ class NeuralNetwork(object):
                 # update the parameters for this batch
                 self.update_parameters(grad_w, grad_b, epsilon=epsilon)
 
-            if e % 1000 == 0:
+            if e % 500 == 0:
                 loss, accuracy = self.calculate_loss_and_accuracy(training_data, labels)
                 print "Loss after iteration %i: %f accuracy: %0.2f" % (e, loss, accuracy)
 

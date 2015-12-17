@@ -43,6 +43,8 @@ def parse_args():
                         default=False, help='print loss during training?')
     parser.add_argument('--no_center', action='store_true', required=False, default=False,
                         dest='center', help="flag to disable data centering")
+    parser.add_argument('--null', action='store_true', dest='null', required=False, default=False,
+                        help="classify null motifs")
     parser.add_argument('--output_location', '-o', action='store', dest='out',
                         required=True, type=str, default=None,
                         help="directory to put results")
@@ -76,8 +78,12 @@ def main(args):
 
     print >> sys.stdout, start_message
 
-    #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-    motifs = [747, 354]
+    if args.null is True:
+        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        motifs = [11, 62, 87]
+    else:
+        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()

@@ -106,7 +106,7 @@ class NeuralNetwork(object):
 
         return grad_w, grad_b
 
-    def fit(self, samples, labels, batch=False, epochs=10000, epsilon=0.01, lbda=0.01, print_loss=False):
+    def fit(self, samples, labels, epochs=10000, epsilon=0.01, lbda=0.01, print_loss=False):
         print "before training accuracy: %0.2f" % self.evaluate(samples, labels)
         for e in xrange(0, epochs):
             # first do the forward pass, keeping track of everything
@@ -149,9 +149,6 @@ class NeuralNetwork(object):
 
             # regularize the gradient on the weights
             grad_w = [gw + lbda * w for gw, w in izip(grad_w, self.weights)]
-
-            if batch is True:
-                return grad_w, grad_b
 
             self.update_parameters(grad_w, grad_b, epsilon)
             # update based on learning rate (epsilon)

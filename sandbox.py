@@ -51,10 +51,12 @@ Y2 = [y[1] for y in test]
 #                       X, Y)
 
 tsv = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.vl.forward.tsv"
-path = "../marginAlign/cPecan/tests/test_alignments/c100/tempFiles_alignment/"
+c_path = "../marginAlign/cPecan/tests/test_alignments/c100/tempFiles_alignment/"
+mc_path = "../marginAlign/cPecan/tests/test_alignments/mc100/tempFiles_alignment/"
+hmc_path = "../marginAlign/cPecan/tests/test_alignments/hmc100/tempFiles_alignment/"
 
-labels = []
-train, labels, test = collect_data_vectors(path, True, labels, 0, 1, 747, 100)
+classify_with_network(c_path, mc_path, hmc_path, True, 62, 0.75, 5, 10000, 1000, ReLU, "./")
+
 
 
 

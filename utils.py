@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """Utility functions for MinION signal alignments
 """
+from __future__ import print_function
 import os
 from neural_network import *
 
@@ -86,7 +87,75 @@ def collect_data_vectors(path, forward, labels, label, portion, motif_start, max
         labels.append(label)  # TODO move this out of the function
 
     for i, f in enumerate(tsvs[split_index:]):
-        weight, vector = cull_motif_features(motif_start, path + f, forward)
+        vector = cull_motif_features(motif_start, path + f, forward)
         test_data[i:i+1] = vector
 
     return train_data, labels, test_data
+
+
+def shuffle_and_maintain_labels(data, labels):
+    assert len(data) == len(labels)
+    dataset = zip(data, labels)
+    shuffle(dataset)
+    X = [x[0] for x in dataset]
+    y = [x[1] for x in dataset]
+
+    return np.asarray(X), y
+
+
+def classify_with_network(c_alignments, mc_alignments, hmc_alignments, forward, motif_start_position,
+                          train_test_split, iterations, epochs, max_samples, activation_function, out_path):
+    if forward:
+        direction_label = ".forward"
+    else:
+        direction_label = ".backward"
+
+    out_file = open(out_path + str(motif_start_position) + direction_label + ".tsv", 'wa')
+
+    # bin to hold accuracies for each iteration
+    scores = []
+
+    for i in xrange(iterations):
+        labels = []
+        c_train, labels, c_test = collect_data_vectors(c_alignments, forward, labels, 0,
+                                                       train_test_split, motif_start_position, max_samples)
+        mc_train, labels, mc_test = collect_data_vectors(mc_alignments, forward, labels, 1,
+                                                         train_test_split, motif_start_position, max_samples)
+        hmc_train, labels, hmc_test = collect_data_vectors(hmc_alignments, forward, labels, 2,
+                                                           train_test_split, motif_start_position, max_samples)
+
+        training_data = np.vstack((c_train, mc_train, hmc_train))
+
+        X, y = shuffle_and_maintain_labels(training_data, labels)
+
+        net = NeuralNetwork(input_dim=X.shape[1],
+                            nb_classes=len(set(y)),
+                            hidden_dims=[10],
+                            activation_function=activation_function)
+
+        #net.fit(samples=X, labels=y, epochs=10000, epsilon=0.0001, lbda=0.0001, print_loss=True)
+        net.mini_batch_sgd(X, y, 5000, 10, 0.01, 0.01)
+
+        c_targets = np.zeros(len(c_test))
+
+        mc_targets = np.zeros(len(mc_test))
+        mc_targets.fill(1)
+
+        hmc_targets = np.zeros(len(hmc_test))
+        hmc_targets.fill(2)
+
+        all_test_data = np.vstack((c_test, mc_test, hmc_test))
+        all_targets = np.concatenate((c_targets, mc_targets, hmc_targets))
+
+        accuracy = net.evaluate(all_test_data, all_targets)
+        print(accuracy, file=out_file)
+        scores.append(accuracy)
+
+    print(">{motif}\t{accuracy}".format(motif=motif_start_position, accuracy=np.mean(scores), end="\n"), file=out_file)
+    return
+
+
+
+
+
+

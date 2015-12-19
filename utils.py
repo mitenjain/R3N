@@ -161,7 +161,7 @@ def classify_with_network(c_alignments, mc_alignments, hmc_alignments,
 
         net = NeuralNetwork(input_dim=X.shape[1],
                             nb_classes=len(set(y)),
-                            hidden_dims=[10],
+                            hidden_dims=hidden_shape,
                             activation_function=activation_function)
 
         if mini_batch is not None:

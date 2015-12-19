@@ -105,7 +105,7 @@ def main(args):
             "activation_function": hyperbolic_tangent,
             "epsilon": args.epsilon,
             "lbda": args.lbda,
-            "hidden_shape": [50],
+            "hidden_shape": [100],
             "print_loss": args.print_loss,
             "out_path": args.out,
             "center_data": args.center,

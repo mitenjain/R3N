@@ -79,11 +79,11 @@ def main(args):
     print >> sys.stdout, start_message
 
     if args.null is True:
-        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
-        motifs = [11, 62, 87]
+        motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        #motifs = [11, 62, 87]
     else:
-        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-        motifs = [747, 354]
+        motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        #motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()

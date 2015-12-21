@@ -4,8 +4,9 @@ from toy_datasets import *
 from neural_network import *
 from utils import *
 from activation_functions import *
+from optimization import *
 import input_data
-from logistic_sgd import load_data, sgd_optimization_mnist
+
 
 # generating test data
 #X, Y = generate_2_class_moon_data()
@@ -60,9 +61,9 @@ net.mini_batch_sgd(training_data=X,
 #X2, Y2 = dataset[1]
 #test_set_x, test_set_y = dataset[2]
 
-minibatch_sgd(train_data=X, labels=Y, valid_data=X2, valid_labels=Y2,
-              learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=3000,
-              batch_size=10)
+mini_batch_sgd(train_data=X, labels=Y, valid_data=X2, valid_labels=Y2,
+               learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=2000,
+               batch_size=10)
 
 
 

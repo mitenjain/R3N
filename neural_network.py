@@ -9,12 +9,98 @@ from __future__ import print_function
 import numpy as np
 import sys
 from itertools import izip
-from logistic_sgd import load_data
+from layers import *
+import cPickle
 import theano
 import theano.tensor as T
 
-# globals
-rng = np.random.RandomState()
+
+class Model(object):
+    """Base class for network models
+    """
+    def __init__(self, x, in_dim, n_classes):
+        """x: input data
+          in_dim: dimensionality of input data
+          n_classes: number of classes within data
+        """
+        self.input = x
+        self.in_dim = in_dim
+        self.n_classes = n_classes
+        self.params = None
+
+    def write(self, file_path):
+        f = open(file_path, 'w')
+        d = {
+            "model": self.__class__,
+            "in_dim": self.in_dim,
+            "n_classes": self.n_classes,
+        }
+        assert (self.params is not None)
+        for param in self.params:
+            lb = '{}'.format(param)
+            d[lb] = param.get_value()
+        cPickle.dump(d, f)
+
+    def load(self, file_path, careful=False):
+        f = open(file_path, 'r')
+        d = cPickle.load(f)
+        assert(self.in_dim == d['in_dim'])
+        assert(self.n_classes == d['n_classes'])
+        assert(self.__class__ == d['model'])
+
+        missing_params = 0
+        for param in self.params:
+            look_up = "{}".format(param)
+            if look_up in d.keys():
+                param.set_value(d[look_up])
+            else:
+                missing_params += 1
+        if careful is True:
+            print("got {} missing params".format(missing_params), file=sys.stderr)
+
+
+class FastNeuralNetwork(Model):
+    def __init__(self, x, in_dim, hidden_dim, n_classes):
+        super(FastNeuralNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        # first layer (hidden)
+        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim, id='h1', activation=T.tanh)
+        # final layer (softmax)
+        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer.output, in_dim=hidden_dim, out_dim=n_classes, id='s1')
+        # Regularization
+        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.softmax_layer.weights).sum()
+        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
+        # output, errors, and likelihood
+        self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
+        self.errors = self.softmax_layer.errors
+        self.params = self.hidden_layer.params + self.softmax_layer.params
+        self.input = x
+
+
+class ThreeLayerNetwork(Model):
+    def __init__(self, x, in_dim, hidden_dim, n_classes):
+        """Note: hidden dim is a list
+        """
+        super(ThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        # first layer (hidden)
+        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=T.tanh)
+        # second layer
+        self.hidden_layer2 = HiddenLayer(x=self.hidden_layer.output,
+                                         in_dim=hidden_dim[0], out_dim=hidden_dim[1],
+                                         activation=T.tanh)
+        # final layer (softmax)
+        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[1], out_dim=n_classes)
+
+        # Regularization
+        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.hidden_layer2.weights).sum() +\
+                  abs(self.softmax_layer.weights).sum()
+        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + abs(self.hidden_layer2.weights).sum() +\
+                     (self.softmax_layer.weights ** 2).sum()
+
+        # output, errors, and likelihood
+        self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
+        self.errors = self.softmax_layer.errors
+        self.params = self.hidden_layer.params + self.hidden_layer2.params + self.softmax_layer.params
+        self.input = x
 
 
 class NeuralNetwork(object):
@@ -242,145 +328,3 @@ class NeuralNetwork(object):
         return np.mean(hard_calls == labels)
 
 
-class SoftmaxLayer(object):
-    """Multiclass logistic regression layer class
-    """
-    def __init__(self, x, in_dim, out_dim):
-        self.weights = theano.shared(value=np.zeros([in_dim, out_dim], dtype=theano.config.floatX),
-                                     name='weights',
-                                     borrow=True
-                                     )
-        self.biases = theano.shared(value=np.zeros([out_dim], dtype=theano.config.floatX),
-                                    name='biases',
-                                    borrow=True
-                                    )
-        self.params = [self.weights, self.biases]
-
-        self.input = x
-        self.output = self.prob_y_given_x(x)
-        self.y_predict = T.argmax(self.output, axis=1)
-
-    def prob_y_given_x(self, input_data):
-        return T.nnet.softmax(T.dot(input_data, self.weights) + self.biases)
-
-    def negative_log_likelihood(self, labels):
-        return -T.mean(T.log(self.output)[T.arange(labels.shape[0]), labels])
-
-    def errors(self, labels):
-        return T.mean(T.neq(self.y_predict, labels))
-
-
-class HiddenLayer(object):
-    def __init__(self, x, in_dim, out_dim, W=None, b=None, activation=T.tanh):
-        if W is None:
-            W_values = np.asarray(rng.uniform(low=-np.sqrt(6. / (in_dim + out_dim)),
-                                              high=np.sqrt(6. / (in_dim + out_dim)),
-                                              size=(in_dim, out_dim)),
-                                  dtype=theano.config.floatX
-                                  )
-            W = theano.shared(value=W_values, name='W', borrow=True)
-        if b is None:
-            b_values = np.zeros((out_dim,), dtype=theano.config.floatX)
-            b = theano.shared(value=b_values, name='b', borrow=True)
-
-        self.weights = W
-        self.biases = b
-        self.params = [self.weights, self.biases]
-
-        #self.input = x
-        lin_out = T.dot(x, self.weights) + self.biases
-        self.output = lin_out if activation is None else activation(lin_out)
-
-
-class fastNeuralNetwork(object):
-    def __init__(self, x, in_dim, hidden_dim, n_classes):
-        # first layer (hidden)
-        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim, activation=T.tanh)
-        # final layer (softmax)
-        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer.output, in_dim=hidden_dim, out_dim=n_classes)
-        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.softmax_layer.weights).sum()
-        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
-        #self.L2_sq = sum((self.hidden_layer.weights ** 2)) + sum((self.softmax_layer.weights ** 2))
-        self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
-        self.errors = self.softmax_layer.errors
-        self.params = self.hidden_layer.params + self.softmax_layer.params
-        self.input = x
-
-
-def minibatch_sgd(train_data, labels, valid_data, valid_labels,
-                  learning_rate, L1_reg, L2_reg, epochs,
-                  batch_size):
-    # compute number of minibatches for training, validation and testing
-    train_set_x, train_set_y = shared_dataset(train_data, labels, True)
-    valid_set_x, valid_set_y = shared_dataset(valid_data, valid_labels, True)
-    n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
-    n_valid_batches = valid_set_x.get_value(borrow=True).shape[0] / batch_size
-
-    batch_index = T.lscalar()
-
-    # containers to hold mini-batches
-    x = T.matrix('x')
-    y = T.ivector('y')
-
-    net = fastNeuralNetwork(x=x, in_dim=64, n_classes=10, hidden_dim=500)
-
-    # cost function
-    cost = (net.negative_log_likelihood(labels=y) + L1_reg * net.L1 + L2_reg * net.L2_sq)
-
-    valid_fcn = theano.function(inputs=[batch_index],
-                                outputs=net.errors(y),
-                                givens={
-                                    x: valid_set_x[batch_index * batch_size: (batch_index + 1) * batch_size],
-                                    y: valid_set_y[batch_index * batch_size: (batch_index + 1) * batch_size]
-                                })
-
-    # gradients
-    nambla_params = [T.grad(cost, param) for param in net.params]
-
-    # update tuple
-    updates = [(param, param - learning_rate * nambla_param)
-               for param, nambla_param in zip (net.params, nambla_params)]
-
-    # main function? could make this an attribute and reduce redundant code
-    train_fcn = theano.function(inputs=[batch_index],
-                                outputs=cost,
-                                updates=updates,
-                                givens={
-                                    x: train_set_x[batch_index * batch_size: (batch_index + 1) * batch_size],
-                                    y: train_set_y[batch_index * batch_size: (batch_index + 1) * batch_size]
-                                })
-
-    # train the model
-    for epoch in xrange(0, epochs):
-        for i in xrange(n_train_batches):
-            batch_avg_cost = train_fcn(i)
-        if epoch % 500 == 0:
-            valid_costs = [valid_fcn(_) for _ in xrange(n_valid_batches)]
-            mean_validation_cost = 100 * (1 - np.mean(valid_costs))
-            print("At epoch {0}, accuracy {1}".format(epoch, mean_validation_cost))
-
-    return net
-
-
-def shared_dataset(data_x, data_y, borrow=True):
-        """ Function that loads the dataset into shared variables
-
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU memory (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        is needed (the default behaviour if the data is not in a shared
-        variable) would lead to a large decrease in performance.
-        """
-
-        shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX),
-                                 borrow=borrow)
-        shared_y = theano.shared(np.asarray(data_y, dtype=theano.config.floatX),
-                                 borrow=borrow)
-        # When storing data on the GPU it has to be stored as floats
-        # therefore we will store the labels as ``floatX`` as well
-        # (``shared_y`` does exactly that). But during our computations
-        # we need them as ints (we use labels as index, and if they are
-        # floats it doesn't make sense) therefore instead of returning
-        # ``shared_y`` we will have to cast it to int. This little hack
-        # lets ous get around this issue
-        return shared_x, T.cast(shared_y, 'int32')

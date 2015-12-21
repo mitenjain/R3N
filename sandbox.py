@@ -60,10 +60,15 @@ net.mini_batch_sgd(training_data=X,
 #X, Y = dataset[0]
 #X2, Y2 = dataset[1]
 #test_set_x, test_set_y = dataset[2]
-
-mini_batch_sgd(train_data=X, labels=Y, valid_data=X2, valid_labels=Y2,
+'''
+mini_batch_sgd(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
                learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=2000,
                batch_size=10)
+'''
+#mini_batch_sgd_fancy(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
+#                     learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=2000,
+#                     batch_size=10)
+predict(X2, Y2)
 
 
 

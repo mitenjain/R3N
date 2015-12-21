@@ -203,6 +203,12 @@ def classify_with_network(c_alignments, mc_alignments, hmc_alignments,
     return
 
 
+def make_label_array(labels, n_classes):
+    n = len(labels)
+    label_array = np.zeros([n, n_classes], dtype=np.int64)
+    for i in xrange(0, n):
+        label_array[i, labels[i]] = 1
+    return np.asarray(label_array, dtype=np.int)
 
 
 

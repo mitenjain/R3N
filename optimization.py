@@ -1,8 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import numpy as np
+import os, sys
+import cPickle
 import theano
 import theano.tensor as T
+import numpy as np
 from utils import shared_dataset, get_network
 import matplotlib.pyplot as plt
 
@@ -10,7 +12,9 @@ import matplotlib.pyplot as plt
 def mini_batch_sgd_fancy(train_data, labels, xTrain_data, xTrain_labels,
                          learning_rate, L1_reg, L2_reg, epochs,
                          batch_size,
-                         hidden_dim, model_type, model_file=None):
+                         hidden_dim, model_type, model_file=None,
+                         trained_model_dir=None,
+                         ):
     """
 
     :param train_data: np array of training data, (n_examples x n_features)
@@ -85,8 +89,10 @@ def mini_batch_sgd_fancy(train_data, labels, xTrain_data, xTrain_labels,
     xtrain_accuracies = []
     xtrain_costs_bin = []
 
+    check_frequency = epochs / 10
+
     for epoch in xrange(0, epochs):
-        if epoch % 1000 == 0:
+        if epoch % check_frequency == 0:
             # collect the costs on the cross-train data
             xtrain_costs = [xtrain_fcn(_) for _ in xrange(n_xtrain_batches)]
             avg_xtrain_cost = np.mean(xtrain_costs)
@@ -96,21 +102,27 @@ def mini_batch_sgd_fancy(train_data, labels, xTrain_data, xTrain_labels,
             xtrain_accuracies.append(avg_xtrain_accuracy)
             xtrain_costs_bin += xtrain_costs
 
-            if epoch % 1000 == 0:
-                print("At epoch {0}, cross-train accuracy {1}".format(epoch, avg_xtrain_accuracy))
+            if epoch % check_frequency == 0:
+                print("At epoch {0}, cross-train accuracy {1}".format(epoch, avg_xtrain_accuracy), file=sys.stderr)
 
             # if we're getting better, save the model
-            #if avg_xtrain_cost < best_xtrain_loss:
-            #    net.write("./model{}.pkl".format(epoch))
+            if avg_xtrain_cost < best_xtrain_loss and trained_model_dir is not None:
+                if not os.path.exists(trained_model_dir):
+                    os.makedirs(trained_model_dir)
+                net.write("{0}model{1}.pkl".format(trained_model_dir, epoch))
 
         for i in xrange(n_train_batches):
             batch_avg_cost = train_fcn(i)
-            if i % 1000:
+            if i % (n_train_batches / 10) == 0:
                 batch_costs.append(float(batch_avg_cost))
 
-    #plt.plot(batch_costs)
-    #plt.show()
-    #plt.plot(xtrain_accuracies)
-    #plt.show()
-    #plt.plot(xtrain_costs_bin)
+    # pickle the summary stats for the training
+    summary = {
+        "batch_costs": batch_costs,
+        "xtrain_accuracies": xtrain_accuracies,
+        "xtrain_costs": xtrain_costs_bin
+    }
+    with open("{}summary_stats.pkl".format(trained_model_dir), 'w') as f:
+        cPickle.dump(summary, f)
+
     return net

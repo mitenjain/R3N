@@ -98,11 +98,14 @@ def classify_with_network2(
 
         all_targets = np.concatenate((c_targets, mc_targets, hmc_targets))
 
+        trained_model_dir = "{0}{1}_Models/".format(out_path, motif_start_position)
+
         net = mini_batch_sgd_fancy(train_data=X, labels=y,
                                    xTrain_data=all_test_data, xTrain_labels=all_targets,
                                    learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
                                    epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
-                                   model_type=model_type, model_file=model_file)
+                                   model_type=model_type, model_file=model_file,
+                                   trained_model_dir=trained_model_dir)
 
         errors = predict(all_test_data, all_targets, net)
         errors = 1 - errors

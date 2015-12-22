@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument('--iter', '-i', action='store', dest='iter', required=False,
                         default=2, type=int, help="number of iterations to do")
     parser.add_argument('--learning_algorithm', '-a', dest='learning_algo', required=False,
-                        default=None, action='store', help="options: \"annealing\"")
+                        default=None, action='store', type=str, help="options: \"annealing\"")
     parser.add_argument('--epochs', '-ep', action='store', dest='epochs', required=False,
                         default=10000, type=int, help="number of iterations to do")
     parser.add_argument('--batch_size', '-b', action='store', dest='batch_size', required=True, type=int,
@@ -104,6 +104,7 @@ def main(args):
             "forward": args.forward,
             "motif_start_position": motif,
             "no_center": args.no_center,
+            "learning_algorithm": args.learning_algo,
             "train_test_split": args.split,
             "iterations": args.iter,
             "epochs": args.epochs,
@@ -118,8 +119,8 @@ def main(args):
             "out_path": args.out,
 
         }
-        classify_with_network2(**nn_args)  # activate for debugging
-        #work_queue.put(nn_args)
+        #classify_with_network2(**nn_args)  # activate for debugging
+        work_queue.put(nn_args)
 
     for w in xrange(workers):
         p = Process(target=run_nn, args=(work_queue, done_queue))

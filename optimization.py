@@ -97,11 +97,11 @@ def mini_batch_sgd_fancy(train_data, labels, xTrain_data, xTrain_labels,
             xtrain_costs_bin += xtrain_costs
 
             if epoch % 1000 == 0:
-                print("At epoch {0}, accuracy {1}".format(epoch, avg_xtrain_accuracy))
+                print("At epoch {0}, cross-train accuracy {1}".format(epoch, avg_xtrain_accuracy))
 
             # if we're getting better, save the model
-            if avg_xtrain_cost < best_xtrain_loss:
-                net.write("./model{}.pkl".format(epoch))
+            #if avg_xtrain_cost < best_xtrain_loss:
+            #    net.write("./model{}.pkl".format(epoch))
 
         for i in xrange(n_train_batches):
             batch_avg_cost = train_fcn(i)

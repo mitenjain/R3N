@@ -30,18 +30,20 @@ def parse_args():
                         default=2, type=int, help="number of iterations to do")
     parser.add_argument('--epochs', '-ep', action='store', dest='epochs', required=False,
                         default=10000, type=int, help="number of iterations to do")
-    parser.add_argument('--mini_batch', '-b', action='store', dest='mini_batch', required=False, type=int,
-                        default=None, help='specify size of mini-batches for mini-batch training')
-    parser.add_argument('--epsilon', '-e', action='store', dest='epsilon',
+    parser.add_argument('--batch_size', '-b', action='store', dest='batch_size', required=True, type=int,
+                        default=None, help='specify batch size')
+    parser.add_argument('--learning_rate', '-e', action='store', dest='learning_rate',
                         required=False, default=0.01, type=float)
-    parser.add_argument('--lambda', '-l', action='store', dest='lbda', required=False,
-                        default=0.01, type=float)
+    parser.add_argument('--L1_reg', '-l1', action='store', dest='L1', required=False,
+                        default=0.0, type=float)
+    parser.add_argument('--L2_reg', '-l2', action='store', dest='L2', required=False,
+                        default=0.001, type=float)
     parser.add_argument('--train_test', '-s', action='store', dest='split', required=False,
                         default=0.9, type=float, help="train/test split")
     parser.add_argument('--print_loss', '-lo', action='store_true', dest='print_loss',
                         default=False, help='print loss during training?')
     parser.add_argument('--no_center', action='store_true', required=False, default=False,
-                        dest='center', help="flag to disable data centering")
+                        dest='no_center', help="flag to disable data centering")
     parser.add_argument('--null', action='store_true', dest='null', required=False, default=False,
                         help="classify null motifs")
     parser.add_argument('--output_location', '-o', action='store', dest='out',
@@ -52,10 +54,12 @@ def parse_args():
 
 
 def run_nn(work_queue, done_queue):
+    #networks = []
     try:
         for f in iter(work_queue.get, 'STOP'):
             #classify_with_network(**f)
-            classify_with_network2(**f)
+            n = classify_with_network2(**f)
+            #networks.append(n)
     except Exception:
         done_queue.put("%s failed" % current_process().name)
 
@@ -73,17 +77,17 @@ def main(args):
 #    Data centering: {center}
 #    Train/test split: {train_test}
 #    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
-                                train_test=args.split, out=args.out, epochs=args.epochs, center=args.center,
+                                train_test=args.split, out=args.out, epochs=args.epochs, center=args.no_center,
                                 cmd=" ".join(sys.argv[:]))
 
     print >> sys.stdout, start_message
 
     if args.null is True:
-        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
-        motifs = [11, 62, 87]
+        motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        #motifs = [11, 62, 87]
     else:
-        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-        motifs = [747, 354]
+        motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        #motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()
@@ -97,23 +101,23 @@ def main(args):
             "hmc_alignments": args.hmc_files,
             "forward": args.forward,
             "motif_start_position": motif,
-            "center_data": True,
+            "no_center": args.no_center,
             "train_test_split": args.split,
             "iterations": args.iter,
             "epochs": args.epochs,
             "max_samples": args.nb_files,
-            "batch_size": args.mini_batch,
-            "learning_rate": args.epsilon,
-            "L1_reg": 0.0,
-            "L2_reg": 0.0001,
-            "hidden_dim": 100,
-            "model_type": "twoLayer",
+            "batch_size": args.batch_size,
+            "learning_rate": args.learning_rate,
+            "L1_reg": args.L1,
+            "L2_reg": args.L2,
+            "hidden_dim": 100,  # temp hardcoded
+            "model_type": "twoLayer",  # temp hardcoded
             "print_loss": args.print_loss,
             "out_path": args.out,
 
         }
-        classify_with_network2(**nn_args)  # activate for debugging
-        #work_queue.put(nn_args)
+        #classify_with_network2(**nn_args)  # activate for debugging
+        work_queue.put(nn_args)
 
     for w in xrange(workers):
         p = Process(target=run_nn, args=(work_queue, done_queue))

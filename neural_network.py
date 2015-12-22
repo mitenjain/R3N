@@ -15,31 +15,32 @@ from optimization import mini_batch_sgd_fancy
 
 
 def predict(test_data, true_labels, model, model_file=None):
-    y = T.ivector('y')
-
     if model_file is not None:
         model.load(model_file)
 
-    predict_fcn = theano.function(inputs=[model.input],
-                                  outputs=model.y_predict,
-                                  )
+    y = T.ivector('y')
+
+    #predict_fcn = theano.function(inputs=[model.input],
+    #                              outputs=model.y_predict,
+    #                              )
 
     error_fcn = theano.function(inputs=[model.input, y],
                                 outputs=model.errors(y),
                                 )
 
-    predictions = predict_fcn(test_data)
+    #predictions = predict_fcn(test_data)
     errors = error_fcn(test_data, true_labels)
 
-    print("prediction", predictions)
-    print("errors", errors)
+    #print("prediction", predictions)
+    #print("errors", errors)
+    return errors
 
 
 def classify_with_network2(
         # alignments
         c_alignments, mc_alignments, hmc_alignments,
         # which alignments to go/get
-        forward, motif_start_position, center_data,
+        forward, motif_start_position, no_center,
         # training params
         train_test_split, iterations, epochs, max_samples, batch_size,
         # model params
@@ -71,7 +72,7 @@ def classify_with_network2(
         training_data = np.vstack((c_train, mc_train, hmc_train))
 
         # routine to center data features
-        ## added feature centering  ## TODO make optional
+
         # get the mean
         feature_mean = np.nanmean(training_data, axis=0)
 
@@ -103,8 +104,12 @@ def classify_with_network2(
                                    epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
                                    model_type=model_type, model_file=model_file)
 
-        predict(all_test_data, all_targets, net)
+        errors = predict(all_test_data, all_targets, net)
+        errors = 1 - errors
+        out_file.write("{}\n".format(errors))
+        scores.append(errors)
 
+    print(">{motif}\t{accuracy}".format(motif=motif_start_position, accuracy=np.mean(scores), end="\n"), file=out_file)
     return net
-    #print(">{motif}\t{accuracy}".format(motif=motif_start_position, accuracy=np.mean(scores), end="\n"), file=out_file)
+
 

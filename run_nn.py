@@ -34,9 +34,9 @@ def parse_args():
                         default=None, help='specify batch size')
     parser.add_argument('--learning_rate', '-e', action='store', dest='learning_rate',
                         required=False, default=0.01, type=float)
-    parser.add_argument('--L1_reg', '-l1', action='store', dest='L1', required=False,
+    parser.add_argument('--L1_reg', '-L1', action='store', dest='L1', required=False,
                         default=0.0, type=float)
-    parser.add_argument('--L2_reg', '-l2', action='store', dest='L2', required=False,
+    parser.add_argument('--L2_reg', '-L2', action='store', dest='L2', required=False,
                         default=0.001, type=float)
     parser.add_argument('--train_test', '-s', action='store', dest='split', required=False,
                         default=0.9, type=float, help="train/test split")
@@ -83,11 +83,11 @@ def main(args):
     print >> sys.stdout, start_message
 
     if args.null is True:
-        motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
-        #motifs = [11, 62, 87]
+        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        motifs = [11, 62, 87]
     else:
-        motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-        #motifs = [747, 354]
+        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()
@@ -116,8 +116,8 @@ def main(args):
             "out_path": args.out,
 
         }
-        #classify_with_network2(**nn_args)  # activate for debugging
-        work_queue.put(nn_args)
+        classify_with_network2(**nn_args)  # activate for debugging
+        #work_queue.put(nn_args)
 
     for w in xrange(workers):
         p = Process(target=run_nn, args=(work_queue, done_queue))

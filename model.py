@@ -9,7 +9,7 @@ from __future__ import print_function
 import numpy as np
 import sys
 from itertools import izip
-from layers import *
+from layers import HiddenLayer, SoftmaxLayer
 import cPickle
 import theano
 import theano.tensor as T
@@ -29,6 +29,9 @@ class Model(object):
         self.params = None
 
     def write(self, file_path):
+        """Write model to file, using cPickle
+        file_path: string, path to and including file to be written
+        """
         f = open(file_path, 'w')
         d = {
             "model": self.__class__,
@@ -42,6 +45,9 @@ class Model(object):
         cPickle.dump(d, f)
 
     def load(self, file_path, careful=False):
+        """Load model
+         file_path: string, file to and including model file
+        """
         f = open(file_path, 'r')
         d = cPickle.load(f)
         assert(self.in_dim == d['in_dim'])
@@ -52,6 +58,7 @@ class Model(object):
         for param in self.params:
             look_up = "{}".format(param)
             if look_up in d.keys():
+                assert(len(param.get_value()) == len(d[look_up]))
                 param.set_value(d[look_up])
             else:
                 missing_params += 1
@@ -62,31 +69,38 @@ class Model(object):
 class FastNeuralNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
         super(FastNeuralNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+
         # first layer (hidden)
-        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim, id='h1', activation=T.tanh)
+        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim, layer_id='h1', activation=T.tanh)
+
         # final layer (softmax)
         self.softmax_layer = SoftmaxLayer(x=self.hidden_layer.output, in_dim=hidden_dim, out_dim=n_classes, id='s1')
+
         # Regularization
         self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.softmax_layer.weights).sum()
         self.L2_sq = (self.hidden_layer.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
+
         # output, errors, and likelihood
         self.y_predict = self.softmax_layer.y_predict
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.errors = self.softmax_layer.errors
         self.params = self.hidden_layer.params + self.softmax_layer.params
         self.input = x
+        self.type = "twoLayer"
 
 
 class ThreeLayerNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
-        """Note: hidden dim is a list
-        """
+        # Note: hidden dim is a list with the dimensions of the hidden layer
         super(ThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+
         # first layer (hidden)
-        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=T.tanh, id='h1')
+        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=T.tanh, layer_id='h1')
+
         # second layer
         self.hidden_layer2 = HiddenLayer(x=self.hidden_layer.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
-                                         activation=T.tanh, id='h2')
+                                         activation=T.tanh, layer_id='h2')
+
         # final layer (softmax)
         self.softmax_layer = SoftmaxLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[1], out_dim=n_classes,
                                           id='s1')
@@ -98,10 +112,12 @@ class ThreeLayerNetwork(Model):
                      (self.softmax_layer.weights ** 2).sum()
 
         # output, errors, and likelihood
+        self.y_predict = self.softmax_layer.y_predict
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.errors = self.softmax_layer.errors
         self.params = self.hidden_layer.params + self.hidden_layer2.params + self.softmax_layer.params
         self.input = x
+        self.type = "threeLayer"
 
 
 class NeuralNetwork(object):

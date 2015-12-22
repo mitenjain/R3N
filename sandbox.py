@@ -64,11 +64,20 @@ net.mini_batch_sgd(training_data=X,
 mini_batch_sgd(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
                learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=2000,
                batch_size=10)
+mini_batch_sgd_fancy_orig(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
+                          learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=1000,
+                          batch_size=10)
+
 '''
-#mini_batch_sgd_fancy(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
-#                     learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=2000,
-#                     batch_size=10)
-predict(X2, Y2)
+
+
+clf = mini_batch_sgd_fancy(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
+                           learning_rate=0.01, L1_reg=0.0, L2_reg=0.01, epochs=2000,
+                           batch_size=10, hidden_dim=100, model_type="twoLayer")
+
+model_file = "./model0.pkl"
+#clf = FastNeuralNetwork(x=x, in_dim=64, n_classes=10, hidden_dim=10)
+predict(X2, Y2, clf, model_file)
 
 
 

@@ -2,8 +2,7 @@
 """Run a SVM on collected alignment data
 """
 import sys
-from utils import *
-from activation_functions import *
+from neural_network import classify_with_network2
 from argparse import ArgumentParser
 from multiprocessing import Process, current_process, Manager
 
@@ -55,7 +54,8 @@ def parse_args():
 def run_nn(work_queue, done_queue):
     try:
         for f in iter(work_queue.get, 'STOP'):
-            classify_with_network(**f)
+            #classify_with_network(**f)
+            classify_with_network2(**f)
     except Exception:
         done_queue.put("%s failed" % current_process().name)
 
@@ -79,11 +79,11 @@ def main(args):
     print >> sys.stdout, start_message
 
     if args.null is True:
-        motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
-        #motifs = [11, 62, 87]
+        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        motifs = [11, 62, 87]
     else:
-        motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-        #motifs = [747, 354]
+        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()
@@ -97,21 +97,23 @@ def main(args):
             "hmc_alignments": args.hmc_files,
             "forward": args.forward,
             "motif_start_position": motif,
+            "center_data": True,
             "train_test_split": args.split,
             "iterations": args.iter,
             "epochs": args.epochs,
             "max_samples": args.nb_files,
-            "mini_batch": args.mini_batch,
-            "activation_function": hyperbolic_tangent,
-            "epsilon": args.epsilon,
-            "lbda": args.lbda,
-            "hidden_shape": [100],
+            "batch_size": args.mini_batch,
+            "learning_rate": args.epsilon,
+            "L1_reg": 0.0,
+            "L2_reg": 0.0001,
+            "hidden_dim": 100,
+            "model_type": "twoLayer",
             "print_loss": args.print_loss,
             "out_path": args.out,
-            "center_data": args.center,
+
         }
-        #classify_with_network(**nn_args)  # activate for debugging
-        work_queue.put(nn_args)
+        classify_with_network2(**nn_args)  # activate for debugging
+        #work_queue.put(nn_args)
 
     for w in xrange(workers):
         p = Process(target=run_nn, args=(work_queue, done_queue))

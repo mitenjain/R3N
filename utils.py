@@ -3,8 +3,13 @@
 """
 from __future__ import print_function
 import os
-from neural_network import *
+import theano
+import sys
+import numpy as np
+import theano.tensor as T
+from model import NeuralNetwork, FastNeuralNetwork, ThreeLayerNetwork
 from random import shuffle
+
 
 def get_motif_range(ref_start, forward, reference_length=891):
     kmer_length = 6
@@ -24,11 +29,11 @@ def cull_motif_features(start, tsv, forward):
     # build a feature vector that has the first 6 elements as the template features and the second
     # six elements as the complement features, the features are selected as the ones with the maximum
     # posterior probability
-    #feature_vector = np.zeros(12)
     feature_vector = np.empty(12)
     feature_vector.fill(np.nan)
 
-    feature_posteriors = np.zeros([1, 6])  # to keep track of maximum
+    # to keep track of maximum
+    feature_posteriors = np.zeros([1, 6])
 
     for line in data:
         if line[4] == "t" and int(line[0]) in motif_range and forward is True:
@@ -50,7 +55,7 @@ def cull_motif_features(start, tsv, forward):
             e_index = motif_range.index(int(line[0]))
             vector_index = e_index * 2
             delta_mean = float(line[5]) - float(line[9])
-            delta_noise = float(line[6]) - float(line[10])
+            # delta_noise = float(line[6]) - float(line[10])
             posterior = line[8]
 
             if posterior > feature_posteriors[e_index]:
@@ -58,19 +63,10 @@ def cull_motif_features(start, tsv, forward):
                 feature_vector[vector_index + 1] = posterior
                 feature_posteriors[e_index] = posterior
 
-    #if zero_center is True:
-    #    feature_mean = np.mean([feature_vector[i] for i in xrange(0, len(feature_vector), 2)
-    #                            if feature_vector[i] != 0])
-    #    for i in xrange(0, len(feature_vector), 2):
-    #        if feature_vector[i] != 0.0:
-    #            feature_vector[i] -= feature_mean
-    #return np.nan_to_num(feature_vector)
     return feature_vector
 
 
 def collect_data_vectors(path, forward, labels, label, portion, motif_start, max_samples):
-    """collects the training data
-    """
     # collect the files
     if forward:
         tsvs = [x for x in os.listdir(path) if x.endswith(".forward.tsv") and os.stat(path + x).st_size != 0]
@@ -203,34 +199,14 @@ def classify_with_network(c_alignments, mc_alignments, hmc_alignments,
     return
 
 
-def make_label_array(labels, n_classes):
-    n = len(labels)
-    label_array = np.zeros([n, n_classes], dtype=np.int64)
-    for i in xrange(0, n):
-        label_array[i, labels[i]] = 1
-    return np.asarray(label_array, dtype=np.int)
-
-
-def shared_dataset1(data_x, borrow=True):
-        """ Function that loads the dataset into shared variables
-
-        The reason we store our dataset in shared variables is to allow
-        Theano to copy it into the GPU memory (when code is run on GPU).
-        Since copying data into the GPU is slow, copying a minibatch everytime
-        is needed (the default behaviour if the data is not in a shared
-        variable) would lead to a large decrease in performance.
-        """
-
-        shared_x = theano.shared(np.asarray(data_x, dtype=theano.config.floatX),
-                                 borrow=borrow)
-        # When storing data on the GPU it has to be stored as floats
-        # therefore we will store the labels as ``floatX`` as well
-        # (``shared_y`` does exactly that). But during our computations
-        # we need them as ints (we use labels as index, and if they are
-        # floats it doesn't make sense) therefore instead of returning
-        # ``shared_y`` we will have to cast it to int. This little hack
-        # lets ous get around this issue
-        return shared_x
+def get_network(x, in_dim, n_classes, hidden_dim, type):
+    if type == "twoLayer":
+        return FastNeuralNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
+    if type == "threeLayer":
+        return ThreeLayerNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
+    else:
+        print("Invalid model type", file=sys.stderr)
+        return False
 
 
 def shared_dataset(data_x, data_y, borrow=True):

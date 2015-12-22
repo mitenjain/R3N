@@ -37,12 +37,12 @@ def predict(test_data, true_labels, model, model_file=None):
 
 
 def classify_with_network2(
-        # alignments
+        # alignment files
         c_alignments, mc_alignments, hmc_alignments,
-        # which alignments to go/get
+        # which data to use
         forward, motif_start_position, no_center,
         # training params
-        train_test_split, iterations, epochs, max_samples, batch_size,
+        learning_algorithm, train_test_split, iterations, epochs, max_samples, batch_size,
         # model params
         learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None,
         # output params
@@ -100,12 +100,20 @@ def classify_with_network2(
 
         trained_model_dir = "{0}{1}_Models/".format(out_path, motif_start_position)
 
-        net = mini_batch_sgd_with_annealing(train_data=X, labels=y,
-                             xTrain_data=all_test_data, xTrain_labels=all_targets,
-                             learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
-                             epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
-                             model_type=model_type, model_file=model_file,
-                             trained_model_dir=trained_model_dir)
+        if learning_algorithm == "annealing":
+            net = mini_batch_sgd_with_annealing(train_data=X, labels=y,
+                                                xTrain_data=all_test_data, xTrain_labels=all_targets,
+                                                learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
+                                                epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
+                                                model_type=model_type, model_file=model_file,
+                                                trained_model_dir=trained_model_dir)
+        else:
+            net = mini_batch_sgd(train_data=X, labels=y,
+                                xTrain_data=all_test_data, xTrain_labels=all_targets,
+                                learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
+                                epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
+                                model_type=model_type, model_file=model_file,
+                                trained_model_dir=trained_model_dir)
 
         errors = predict(all_test_data, all_targets, net)
         errors = 1 - errors

@@ -28,6 +28,8 @@ def parse_args():
                         default=4, type=int, help="number of jobs to run concurrently")
     parser.add_argument('--iter', '-i', action='store', dest='iter', required=False,
                         default=2, type=int, help="number of iterations to do")
+    parser.add_argument('--learning_algorithm', '-a', dest='learning_algo', required=False,
+                        default=None, action='store', help="options: \"annealing\"")
     parser.add_argument('--epochs', '-ep', action='store', dest='epochs', required=False,
                         default=10000, type=int, help="number of iterations to do")
     parser.add_argument('--batch_size', '-b', action='store', dest='batch_size', required=True, type=int,

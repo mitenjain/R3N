@@ -29,7 +29,7 @@ def cull_motif_features(start, tsv, forward):
     # build a feature vector that has the first 6 elements as the template features and the second
     # six elements as the complement features, the features are selected as the ones with the maximum
     # posterior probability
-    feature_vector = np.empty(18)
+    feature_vector = np.empty(12)
     feature_vector.fill(np.nan)
 
     # to keep track of maximum
@@ -41,9 +41,52 @@ def cull_motif_features(start, tsv, forward):
             # array has format: [e0, p0, e1, p1, e2, p2, e3, p3, e4, p4, e5, p5]
             # multiply by 2 to index through the array
             e_index = motif_range.index(int(line[0]))
+            vector_index = e_index * 2
+            delta_mean = float(line[5]) - float(line[9])
+            posterior = float(line[8])
+
+            # if the posterior for this event is higher than the one we have previously seen,
+            if posterior > feature_posteriors[0, e_index]:
+                feature_vector[vector_index] = delta_mean
+                feature_vector[vector_index + 1] = posterior
+                feature_posteriors[0, e_index] = posterior
+        if line[4] == "c" and int(line[0]) in motif_range and forward is False:
+            e_index = motif_range.index(int(line[0]))
+            vector_index = e_index * 2
+            delta_mean = float(line[5]) - float(line[9])
+            posterior = line[8]
+
+            if posterior > feature_posteriors[0, e_index]:
+                feature_vector[vector_index] = delta_mean
+                feature_vector[vector_index + 1] = posterior
+                feature_posteriors[0, e_index] = posterior
+
+    return feature_vector
+
+
+def cull_motif_features_with_noise(start, tsv, forward):
+    # load the tsv
+    data = np.loadtxt(tsv, dtype=str)
+    motif_range = get_motif_range(start, forward)
+
+    # build a feature vector that has the first 6 elements as the template features and the second
+    # six elements as the complement features, the features are selected as the ones with the maximum
+    # posterior probability
+    feature_vector = np.empty(18)
+    feature_vector.fill(np.nan)
+
+    # to keep track of maximum
+    feature_posteriors = np.zeros([1, 6])
+
+    for line in data:
+        if line[4] == "t" and int(line[0]) in motif_range and forward is True:
+            # determine which event in the motif this is
+            # array has format: [d0, n0, p0, d1, n1, p1,..., d5, n5, p5]
+            # multiply by 3 to index through the array
+            e_index = motif_range.index(int(line[0]))
             vector_index = e_index * 3
             delta_mean = float(line[5]) - float(line[9])
-            delta_noise = float(line[6]) - float(line[10])  # change in noise not used yet
+            delta_noise = float(line[6]) - float(line[10])
             posterior = float(line[8])
 
             # if the posterior for this event is higher than the one we have previously seen,
@@ -85,9 +128,12 @@ def collect_data_vectors(path, forward, labels, label, portion, motif_start, max
     split_index = int(portion * len(tsvs))
 
     # container for training and test data
-    # data vector is 6 events and 6 posteriors
-    train_data = np.zeros([split_index, 18])
-    test_data = np.zeros([len(tsvs) - split_index, 18])
+    # data vector is 6 events and 6 posteriors if not using noise delta, if you are then its
+    # an 18 feature vector (6 * 2) delta mean and noise + 6 posteriors
+    #train_data = np.zeros([split_index, 18])
+    #test_data = np.zeros([len(tsvs) - split_index, 18])
+    train_data = np.zeros([split_index, 12])
+    test_data = np.zeros([len(tsvs) - split_index, 12])
 
     for i, f in enumerate(tsvs[:split_index]):
         vector = cull_motif_features(motif_start, path + f, forward)

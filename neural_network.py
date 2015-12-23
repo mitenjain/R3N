@@ -92,7 +92,6 @@ def classify_with_network2(
         trained_model_dir = "{0}{1}_Models/".format(out_path, motif_start_position)
 
         if learning_algorithm == "annealing":
-            print("Using Annealing Algorithm", file=sys.stderr)
             net = mini_batch_sgd_with_annealing(train_data=X, labels=y,
                                                 xTrain_data=xtrain_data, xTrain_labels=all_targets,
                                                 learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,

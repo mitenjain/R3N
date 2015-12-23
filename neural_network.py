@@ -71,6 +71,8 @@ def classify_with_network2(
                                                            train_test_split, motif_start_position,
                                                            max_samples)
 
+        assert(len(c_test) > 0 and len(mc_test) > 0 and len(hmc_test) > 0)
+
         # stack the data into one object
         training_data = np.vstack((c_train, mc_train, hmc_train))
         xtrain_data = np.vstack((c_test, mc_test, hmc_test))

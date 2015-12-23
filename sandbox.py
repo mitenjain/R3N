@@ -60,25 +60,19 @@ net.mini_batch_sgd(training_data=X,
 #X, Y = dataset[0]
 #X2, Y2 = dataset[1]
 #test_set_x, test_set_y = dataset[2]
-'''
-mini_batch_sgd(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
-               learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=2000,
-               batch_size=10)
-mini_batch_sgd_fancy_orig(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
-                          learning_rate=0.001, L1_reg=0.0001, L2_reg=0.0001, epochs=1000,
-                          batch_size=10)
 
-'''
+tsv1 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch24_file76_strand.vl.forward.tsv"
+tsv2 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch34_file182_strand.vl.forward.tsv"
 
 
-clf = mini_batch_sgd(train_data=X, labels=Y, xTrain_data=X2, xTrain_labels=Y2,
-                     learning_rate=0.01, L1_reg=0.0, L2_reg=0.01, epochs=2000,
-                     batch_size=10, hidden_dim=100, model_type="twoLayer")
-
-model_file = "./model0.pkl"
-#clf = FastNeuralNetwork(x=x, in_dim=64, n_classes=10, hidden_dim=10)
-predict(X2, Y2, clf, model_file)
-
+#a = cull_motif_features_with_noise(747, tsv, True)
+s = cull_motif_features(354, tsv1, True)
+s2 = cull_motif_features(354, tsv2, True)
+all = np.vstack((s, s2))
+all2 = all * 10.1
+print all
+ps, ps2 = preprocess_data(all, all2, "normalize")
+print ps
 
 
 

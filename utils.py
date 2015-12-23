@@ -21,6 +21,34 @@ def get_motif_range(ref_start, forward, reference_length=891):
         return complement_motif_range
 
 
+def cull_all_motif_features(start, tsv, forward):
+    """Used to cull all of the aligned features in Echelon alignments
+    """
+    # load the tsv
+    data = np.loadtxt(tsv, dtype=str)
+    motif_range = get_motif_range(start, forward)
+
+    # build a feature vector that has the first 6 elements as the template features and the second
+    # six elements as the complement features, the features are selected as the ones with the maximum
+    # posterior probability
+    feature_dict = {}
+    for i in motif_range:
+        feature_dict[str(i)] = []
+
+    for line in data:
+        if line[4] == "t" and int(line[0]) in motif_range and forward is True:
+            delta_mean = float(line[5]) - float(line[9])
+            posterior = float(line[8])
+            feature_dict[line[0]].append((delta_mean, posterior))
+
+        if line[4] == "c" and int(line[0]) in motif_range and forward is False:
+            delta_mean = float(line[5]) - float(line[9])
+            posterior = line[8]
+            feature_dict[line[0]].append((delta_mean, posterior))
+
+    return feature_dict
+
+
 def cull_motif_features(start, tsv, forward):
     # load the tsv
     data = np.loadtxt(tsv, dtype=str)
@@ -158,6 +186,30 @@ def shuffle_and_maintain_labels(data, labels):
 
 
 def preprocess_data(training_vectors, test_vectors, preprocess=None):
+    assert(len(training_vectors.shape) == 2)
+    if preprocess == "center" or preprocess == "normalize":
+        training_mean_vector = np.nanmean(training_vectors, axis=0)
+        # don't center the posteriors
+        for i in xrange(0, 12, 2):
+            training_mean_vector[(i + 1)] = 0
+        training_vectors -= training_mean_vector
+        test_vectors -= training_mean_vector
+
+        if preprocess == "normalize":
+            training_std_vector = np.nanstd(training_vectors, axis=0)
+            # don't norm posteriors
+            for i in xrange(0, 12, 2):
+                training_std_vector[(i + 1)] = 1
+            training_vectors /= training_std_vector
+            test_vectors /= training_std_vector
+
+    prc_training_vectors = np.nan_to_num(training_vectors)
+    prc_test_vectors = np.nan_to_num(test_vectors)
+
+    return prc_training_vectors, prc_test_vectors
+
+
+def preprocess_data_old(training_vectors, test_vectors, preprocess=None):
     if preprocess == "center" or preprocess == "normalize":
         training_mean_vector = np.nanmean(training_vectors, axis=0)
         training_vectors -= training_mean_vector

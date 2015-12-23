@@ -44,8 +44,8 @@ def parse_args():
                         default=0.9, type=float, help="train/test split")
     parser.add_argument('--print_loss', '-lo', action='store_true', dest='print_loss',
                         default=False, help='print loss during training?')
-    parser.add_argument('--no_center', action='store_true', required=False, default=False,
-                        dest='no_center', help="flag to disable data centering")
+    parser.add_argument('--preprocess', '-p', action='store', required=False, default=None,
+                        dest='preprocess', help="options:\nnormalize\ncenter\ndefault:None")
     parser.add_argument('--null', action='store_true', dest='null', required=False, default=False,
                         help="classify null motifs")
     parser.add_argument('--output_location', '-o', action='store', dest='out',
@@ -79,17 +79,17 @@ def main(args):
 #    Data centering: {center}
 #    Train/test split: {train_test}
 #    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
-                                train_test=args.split, out=args.out, epochs=args.epochs, center=args.no_center,
+                                train_test=args.split, out=args.out, epochs=args.epochs, center=args.preprocess,
                                 cmd=" ".join(sys.argv[:]))
 
     print >> sys.stdout, start_message
 
     if args.null is True:
-        motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
-        #motifs = [11, 62, 87]
+        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        motifs = [11, 62, 87]
     else:
-        motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-        #motifs = [747, 354]
+        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()
@@ -103,7 +103,7 @@ def main(args):
             "hmc_alignments": args.hmc_files,
             "forward": args.forward,
             "motif_start_position": motif,
-            "no_center": args.no_center,
+            "preprocess": args.preprocess,
             "learning_algorithm": args.learning_algo,
             "train_test_split": args.split,
             "iterations": args.iter,

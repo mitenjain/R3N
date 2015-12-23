@@ -111,12 +111,21 @@ def shuffle_and_maintain_labels(data, labels):
     return np.asarray(X), y
 
 
-def center_features_on_training_data(training_vectors, test_vectors):
-    feature_mean_vector = np.nanmean(training_vectors, axis=0)
+def preprocess_data(training_vectors, test_vectors, preprocess=None):
+    if preprocess == "center" or preprocess == "normalize":
+        training_mean_vector = np.nanmean(training_vectors, axis=0)
+        training_vectors -= training_mean_vector
+        test_vectors -= training_mean_vector
 
-    training_vectors -= feature_mean_vector
-    test_vectors -= feature_mean_vector
-    return training_vectors, test_vectors
+        if preprocess == "normalize":
+            training_std_vector = np.nanstd(training_vectors, axis=0)
+            training_vectors /= training_std_vector
+            test_vectors /= training_std_vector
+
+    prc_training_vectors = np.nan_to_num(training_vectors)
+    prc_test_vectors = np.nan_to_num(test_vectors)
+
+    return prc_training_vectors, prc_test_vectors
 
 
 def get_network(x, in_dim, n_classes, hidden_dim, type):

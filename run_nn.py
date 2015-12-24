@@ -42,10 +42,10 @@ def parse_args():
                         default=0.001, type=float)
     parser.add_argument('--train_test', '-s', action='store', dest='split', required=False,
                         default=0.9, type=float, help="train/test split")
-    parser.add_argument('--print_loss', '-lo', action='store_true', dest='print_loss',
-                        default=False, help='print loss during training?')
     parser.add_argument('--preprocess', '-p', action='store', required=False, default=None,
                         dest='preprocess', help="options:\nnormalize\ncenter\ndefault:None")
+    parser.add_argument('--events', '-ev', action='store', required=True, dest='events', type=int,
+                        help='number of events per alignment column to use')
     parser.add_argument('--null', action='store_true', dest='null', required=False, default=False,
                         help="classify null motifs")
     parser.add_argument('--output_location', '-o', action='store', dest='out',
@@ -70,16 +70,19 @@ def main(args):
     args = parse_args()
 
     start_message = """
-#    Command line: {cmd}
 #    Starting Neural Net analysis.
+#    Command line: {cmd}
 #    Looking at {nbFiles} files.
 #    Forward mapped strand: {forward}.
 #    Iterations: {iter}.
 #    Epochs: {epochs}
-#    Data centering: {center}
+#    Data pre-processing: {center}
 #    Train/test split: {train_test}
+#    L1 reg: {L1}
+#    L2 reg: {L2}
 #    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
                                 train_test=args.split, out=args.out, epochs=args.epochs, center=args.preprocess,
+                                L1=args.L1, L2=args.L2,
                                 cmd=" ".join(sys.argv[:]))
 
     print >> sys.stdout, start_message
@@ -104,6 +107,7 @@ def main(args):
             "forward": args.forward,
             "motif_start_position": motif,
             "preprocess": args.preprocess,
+            "events_per_pos": args.events,
             "learning_algorithm": args.learning_algo,
             "train_test_split": args.split,
             "iterations": args.iter,
@@ -113,14 +117,13 @@ def main(args):
             "learning_rate": args.learning_rate,
             "L1_reg": args.L1,
             "L2_reg": args.L2,
-            "hidden_dim": 100,  # temp hardcoded
-            "model_type": "twoLayer",  # temp hardcoded
-            "print_loss": args.print_loss,
+            "hidden_dim": [100, 100],  # temp hardcoded
+            "model_type": "threeLayer",  # temp hardcoded
             "out_path": args.out,
 
         }
-        #classify_with_network2(**nn_args)  # activate for debugging
-        work_queue.put(nn_args)
+        classify_with_network2(**nn_args)  # activate for debugging
+        #work_queue.put(nn_args)
 
     for w in xrange(workers):
         p = Process(target=run_nn, args=(work_queue, done_queue))

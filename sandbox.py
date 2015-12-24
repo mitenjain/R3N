@@ -4,6 +4,7 @@ from toy_datasets import *
 from neural_network import *
 from utils import *
 from activation_functions import *
+from itertools import chain
 from optimization import *
 import input_data
 
@@ -63,16 +64,38 @@ net.mini_batch_sgd(training_data=X,
 
 tsv1 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch24_file76_strand.vl.forward.tsv"
 tsv2 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch34_file182_strand.vl.forward.tsv"
+tsv3 = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch4_file149_strand.e.forward.tsv"
 
+alns = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/"
+#alns = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/"
 
 #a = cull_motif_features_with_noise(747, tsv, True)
-s = cull_motif_features(354, tsv1, True)
-s2 = cull_motif_features(354, tsv2, True)
-all = np.vstack((s, s2))
-all2 = all * 10.1
-print all
-ps, ps2 = preprocess_data(all, all2, "normalize")
-print ps
+#s = cull_motif_features(354, tsv1, True)
+#s2 = cull_motif_features(354, tsv2, True)
+#d = cull_all_motif_features(354, tsv3, True)
+#print d
+
+#e = sorted(d['354'], key=lambda x: x[1], reverse=True)[:5]
+#print e
+#e = list(chain(*e))
+#print e
+
+#n = np.zeros([10, (5*12)])
+#print n
+#for _ in xrange(len(e)):
+#    n[0, _] = e[_]
+#print n
+
+tr, trlb, ts, tslb = collect_deep_data_vectors(alns, True, 0, 0.5, 747, 100)
+print tr.shape,
+ptr, pts = preprocess_data(tr, ts, "normalize")
+print ptr.shape
+
+
+
+
+
+
 
 
 

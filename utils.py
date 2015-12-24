@@ -7,6 +7,7 @@ import theano
 import sys
 import numpy as np
 import theano.tensor as T
+from itertools import chain
 from model import NeuralNetwork, FastNeuralNetwork, ThreeLayerNetwork
 from random import shuffle
 
@@ -21,7 +22,7 @@ def get_motif_range(ref_start, forward, reference_length=891):
         return complement_motif_range
 
 
-def cull_all_motif_features(start, tsv, forward):
+def cull_motif_features(start, tsv, forward):
     """Used to cull all of the aligned features in Echelon alignments
     """
     # load the tsv
@@ -32,114 +33,63 @@ def cull_all_motif_features(start, tsv, forward):
     # six elements as the complement features, the features are selected as the ones with the maximum
     # posterior probability
     feature_dict = {}
-    for i in motif_range:
-        feature_dict[str(i)] = []
 
     for line in data:
         if line[4] == "t" and int(line[0]) in motif_range and forward is True:
             delta_mean = float(line[5]) - float(line[9])
             posterior = float(line[8])
-            feature_dict[line[0]].append((delta_mean, posterior))
+            try:
+                feature_dict[line[0]].append((delta_mean, posterior))
+            except KeyError:
+                feature_dict[line[0]] = [(delta_mean, posterior)]
 
         if line[4] == "c" and int(line[0]) in motif_range and forward is False:
             delta_mean = float(line[5]) - float(line[9])
             posterior = line[8]
-            feature_dict[line[0]].append((delta_mean, posterior))
+            try:
+                feature_dict[line[0]].append((delta_mean, posterior))
+            except KeyError:
+                feature_dict[line[0]] = [(delta_mean, posterior)]
 
     return feature_dict
 
 
-def cull_motif_features(start, tsv, forward):
-    # load the tsv
-    data = np.loadtxt(tsv, dtype=str)
-    motif_range = get_motif_range(start, forward)
+def get_vectors(events_per_position, path, tsvs, motif_start, forward, split_idx):
+    nb_event_features = 2  # mean diff and noise
+    nb_positions = 6  # 6-mers
+    vector_size = events_per_position * nb_event_features * nb_positions
+    position_idx_offset = events_per_position * nb_event_features
+    # containers
+    train_data = []
+    tr_append = train_data.append
+    xtrain_data = []
+    xt_append = xtrain_data.append
+    motif_range = get_motif_range(motif_start, forward)
 
-    # build a feature vector that has the first 6 elements as the template features and the second
-    # six elements as the complement features, the features are selected as the ones with the maximum
-    # posterior probability
-    feature_vector = np.empty(12)
-    feature_vector.fill(np.nan)
-
-    # to keep track of maximum
-    feature_posteriors = np.zeros([1, 6])
-
-    for line in data:
-        if line[4] == "t" and int(line[0]) in motif_range and forward is True:
-            # determine which event in the motif this is
-            # array has format: [e0, p0, e1, p1, e2, p2, e3, p3, e4, p4, e5, p5]
-            # multiply by 2 to index through the array
-            e_index = motif_range.index(int(line[0]))
-            vector_index = e_index * 2
-            delta_mean = float(line[5]) - float(line[9])
-            posterior = float(line[8])
-
-            # if the posterior for this event is higher than the one we have previously seen,
-            if posterior > feature_posteriors[0, e_index]:
-                feature_vector[vector_index] = delta_mean
-                feature_vector[vector_index + 1] = posterior
-                feature_posteriors[0, e_index] = posterior
-        if line[4] == "c" and int(line[0]) in motif_range and forward is False:
-            e_index = motif_range.index(int(line[0]))
-            vector_index = e_index * 2
-            delta_mean = float(line[5]) - float(line[9])
-            posterior = line[8]
-
-            if posterior > feature_posteriors[0, e_index]:
-                feature_vector[vector_index] = delta_mean
-                feature_vector[vector_index + 1] = posterior
-                feature_posteriors[0, e_index] = posterior
-
-    return feature_vector
+    # todo make this into it's own function
+    for i, f in enumerate(tsvs[:split_idx]):
+        # get the dictionary of events aligned to each position
+        motif_dict = cull_motif_features(motif_start, path + f, forward)
+        if motif_dict.keys() == []:
+            continue
+        vect = np.full(shape=vector_size, fill_value=np.nan)
+        for idx, position in enumerate(motif_range):
+            # sort the events in by decending posterior match prob, only take the first so many, and then
+            # turn the list of tuples into a list of floats
+            try:
+                events = list(chain(
+                        *sorted(motif_dict[str(position)], key=lambda e: e[1], reverse=True)[:nb_events_per_column]))
+                # add them to the feature vector
+                for _ in xrange(len(events)):
+                    #train_data[i, ((idx * position_idx_offset) + _)] = events[_]
+                    vect[(idx * position_idx_offset) + _] = events[_]
+            except KeyError:
+                continue
+        tr_append(vect)
 
 
-def cull_motif_features_with_noise(start, tsv, forward):
-    # load the tsv
-    data = np.loadtxt(tsv, dtype=str)
-    motif_range = get_motif_range(start, forward)
 
-    # build a feature vector that has the first 6 elements as the template features and the second
-    # six elements as the complement features, the features are selected as the ones with the maximum
-    # posterior probability
-    feature_vector = np.empty(18)
-    feature_vector.fill(np.nan)
-
-    # to keep track of maximum
-    feature_posteriors = np.zeros([1, 6])
-
-    for line in data:
-        if line[4] == "t" and int(line[0]) in motif_range and forward is True:
-            # determine which event in the motif this is
-            # array has format: [d0, n0, p0, d1, n1, p1,..., d5, n5, p5]
-            # multiply by 3 to index through the array
-            e_index = motif_range.index(int(line[0]))
-            vector_index = e_index * 3
-            delta_mean = float(line[5]) - float(line[9])
-            delta_noise = float(line[6]) - float(line[10])
-            posterior = float(line[8])
-
-            # if the posterior for this event is higher than the one we have previously seen,
-            if posterior > feature_posteriors[0, e_index]:
-                feature_vector[vector_index] = delta_mean
-                feature_vector[vector_index + 1] = delta_noise
-                feature_vector[vector_index + 2] = posterior
-                feature_posteriors[0, e_index] = posterior
-        if line[4] == "c" and int(line[0]) in motif_range and forward is False:
-            e_index = motif_range.index(int(line[0]))
-            vector_index = e_index * 3
-            delta_mean = float(line[5]) - float(line[9])
-            delta_noise = float(line[6]) - float(line[10])
-            posterior = line[8]
-
-            if posterior > feature_posteriors[0, e_index]:
-                feature_vector[vector_index] = delta_mean
-                feature_vector[vector_index + 1] = delta_noise
-                feature_vector[vector_index + 2] = posterior
-                feature_posteriors[0, e_index] = posterior
-
-    return feature_vector
-
-
-def collect_data_vectors(path, forward, labels, label, portion, motif_start, max_samples):
+def collect_deep_data_vectors(events_per_pos, path, forward, label, portion, motif_start, max_samples):
     # collect the files
     if forward:
         tsvs = [x for x in os.listdir(path) if x.endswith(".forward.tsv") and os.stat(path + x).st_size != 0]
@@ -149,6 +99,8 @@ def collect_data_vectors(path, forward, labels, label, portion, motif_start, max
     # shuffle
     shuffle(tsvs)
 
+    assert(portion <= 1.0 and max_samples >= 1)
+
     if max_samples < len(tsvs):
         tsvs = tsvs[:max_samples]
 
@@ -156,23 +108,68 @@ def collect_data_vectors(path, forward, labels, label, portion, motif_start, max
     split_index = int(portion * len(tsvs))
 
     # container for training and test data
-    # data vector is 6 events and 6 posteriors if not using noise delta, if you are then its
-    # an 18 feature vector (6 * 2) delta mean and noise + 6 posteriors
-    #train_data = np.zeros([split_index, 18])
-    #test_data = np.zeros([len(tsvs) - split_index, 18])
-    train_data = np.zeros([split_index, 12])
-    test_data = np.zeros([len(tsvs) - split_index, 12])
+    # for the echelon alignments, we allow for a defined number  aligned events, each event has
+    # two features (diff. mean, and posterior), there are 6 positions, so for each read (set of
+    # observations) we need:
+    # nb_events * nb_event_features * positions
+    nb_events_per_column = events_per_pos
+    nb_event_features = 2
+    nb_positions = 6
+    # precomputed
+    vector_size = nb_events_per_column * nb_event_features * nb_positions
+    position_idx_offset = nb_events_per_column * nb_event_features
+    # containers
+    train_data = []
+    tr_append = train_data.append
+    xtrain_data = []
+    xt_append = xtrain_data.append
+    motif_range = get_motif_range(motif_start, forward)
 
+    # todo make this into it's own function
     for i, f in enumerate(tsvs[:split_index]):
-        vector = cull_motif_features(motif_start, path + f, forward)
-        train_data[i:i + 1] = vector
-        labels.append(label)  # TODO move this out of the function
+        # get the dictionary of events aligned to each position
+        motif_dict = cull_motif_features(motif_start, path + f, forward)
+        if motif_dict.keys() == []:
+            continue
+        vect = np.full(shape=vector_size, fill_value=np.nan)
+        for idx, position in enumerate(motif_range):
+            # sort the events in by decending posterior match prob, only take the first so many, and then
+            # turn the list of tuples into a list of floats
+            try:
+                events = list(chain(
+                        *sorted(motif_dict[str(position)], key=lambda e: e[1], reverse=True)[:nb_events_per_column]))
+                # add them to the feature vector
+                for _ in xrange(len(events)):
+                    #train_data[i, ((idx * position_idx_offset) + _)] = events[_]
+                    vect[(idx * position_idx_offset) + _] = events[_]
+            except KeyError:
+                continue
+        tr_append(vect)
 
     for i, f in enumerate(tsvs[split_index:]):
-        vector = cull_motif_features(motif_start, path + f, forward)
-        test_data[i:i+1] = vector
+        # get the dictionary of events aligned to each position
+        motif_dict = cull_motif_features(motif_start, path + f, forward)
+        if motif_dict.keys() == []:
+            continue
+        vect = np.full(shape=vector_size, fill_value=np.nan)
+        for idx, position in enumerate(motif_range):
+            # sort the events in by decending posterior match prob, only take the first so many, and then
+            # turn the list of tuples into a list of floats
+            try:
+                events = list(chain(
+                        *sorted(motif_dict[str(position)], key=lambda e: e[1], reverse=True)[:nb_events_per_column]))
+                # add them to the feature vector
+                for _ in xrange(len(events)):
+                    #train_data[i, ((idx * position_idx_offset) + _)] = events[_]
+                    vect[(idx * position_idx_offset) + _] = events[_]
+            except KeyError:
+                continue
+        xt_append(vect)
 
-    return train_data, labels, test_data
+    train_labels = np.full(shape=[1, len(train_data)], fill_value=label, dtype=np.int32)
+    xtrain_labels = np.full(shape=[1, len(xtrain_data)], fill_value=label, dtype=np.int32)
+
+    return np.asarray(train_data), train_labels, np.asarray(xtrain_data), xtrain_labels
 
 
 def shuffle_and_maintain_labels(data, labels):
@@ -185,7 +182,7 @@ def shuffle_and_maintain_labels(data, labels):
     return np.asarray(X), y
 
 
-def preprocess_data(training_vectors, test_vectors, preprocess=None):
+def preprocess_data_only_events(training_vectors, test_vectors, preprocess=None):
     assert(len(training_vectors.shape) == 2)
     if preprocess == "center" or preprocess == "normalize":
         training_mean_vector = np.nanmean(training_vectors, axis=0)
@@ -209,7 +206,8 @@ def preprocess_data(training_vectors, test_vectors, preprocess=None):
     return prc_training_vectors, prc_test_vectors
 
 
-def preprocess_data_old(training_vectors, test_vectors, preprocess=None):
+def preprocess_data(training_vectors, test_vectors, preprocess=None):
+    assert(len(training_vectors.shape) == 2 and len(test_vectors.shape) == 2)
     if preprocess == "center" or preprocess == "normalize":
         training_mean_vector = np.nanmean(training_vectors, axis=0)
         training_vectors -= training_mean_vector

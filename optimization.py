@@ -88,7 +88,7 @@ def mini_batch_sgd(train_data, labels, xTrain_data, xTrain_labels,
     xtrain_accuracies = []
     xtrain_costs_bin = []
 
-    check_frequency = epochs / 10
+    check_frequency = int(epochs / 10)
 
     for epoch in xrange(0, epochs):
         if epoch % check_frequency == 0:

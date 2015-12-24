@@ -8,7 +8,7 @@ import sys
 import numpy as np
 import theano.tensor as T
 from itertools import chain
-from model import NeuralNetwork, FastNeuralNetwork, ThreeLayerNetwork
+from model import NeuralNetwork, FastNeuralNetwork, ThreeLayerNetwork, ReLUThreeLayerNetwork
 from random import shuffle
 
 
@@ -36,7 +36,8 @@ def cull_motif_features(start, tsv, forward):
 
     for line in data:
         if line[4] == "t" and int(line[0]) in motif_range and forward is True:
-            delta_mean = float(line[5]) - float(line[9])
+            #delta_mean = float(line[5]) - float(line[9])
+            delta_mean = float(line[5]) / float(line[9])  # turn on to try quotient
             posterior = float(line[8])
             try:
                 feature_dict[line[0]].append((delta_mean, posterior))
@@ -88,8 +89,7 @@ def get_vectors(events_per_position, path, tsvs, motif_start, forward, split_idx
         tr_append(vect)
 
 
-
-def collect_deep_data_vectors(events_per_pos, path, forward, label, portion, motif_start, max_samples):
+def collect_data_vectors(events_per_pos, path, forward, label, portion, motif_start, max_samples):
     # collect the files
     if forward:
         tsvs = [x for x in os.listdir(path) if x.endswith(".forward.tsv") and os.stat(path + x).st_size != 0]
@@ -99,7 +99,7 @@ def collect_deep_data_vectors(events_per_pos, path, forward, label, portion, mot
     # shuffle
     shuffle(tsvs)
 
-    assert(portion <= 1.0 and max_samples >= 1)
+    assert(portion < 1.0 and max_samples >= 1)
 
     if max_samples < len(tsvs):
         tsvs = tsvs[:max_samples]
@@ -126,7 +126,7 @@ def collect_deep_data_vectors(events_per_pos, path, forward, label, portion, mot
     motif_range = get_motif_range(motif_start, forward)
 
     # todo make this into it's own function
-    for i, f in enumerate(tsvs[:split_index]):
+    for i, f in enumerate(tsvs):
         # get the dictionary of events aligned to each position
         motif_dict = cull_motif_features(motif_start, path + f, forward)
         if motif_dict.keys() == []:
@@ -140,31 +140,13 @@ def collect_deep_data_vectors(events_per_pos, path, forward, label, portion, mot
                         *sorted(motif_dict[str(position)], key=lambda e: e[1], reverse=True)[:nb_events_per_column]))
                 # add them to the feature vector
                 for _ in xrange(len(events)):
-                    #train_data[i, ((idx * position_idx_offset) + _)] = events[_]
                     vect[(idx * position_idx_offset) + _] = events[_]
             except KeyError:
                 continue
-        tr_append(vect)
-
-    for i, f in enumerate(tsvs[split_index:]):
-        # get the dictionary of events aligned to each position
-        motif_dict = cull_motif_features(motif_start, path + f, forward)
-        if motif_dict.keys() == []:
-            continue
-        vect = np.full(shape=vector_size, fill_value=np.nan)
-        for idx, position in enumerate(motif_range):
-            # sort the events in by decending posterior match prob, only take the first so many, and then
-            # turn the list of tuples into a list of floats
-            try:
-                events = list(chain(
-                        *sorted(motif_dict[str(position)], key=lambda e: e[1], reverse=True)[:nb_events_per_column]))
-                # add them to the feature vector
-                for _ in xrange(len(events)):
-                    #train_data[i, ((idx * position_idx_offset) + _)] = events[_]
-                    vect[(idx * position_idx_offset) + _] = events[_]
-            except KeyError:
-                continue
-        xt_append(vect)
+        if i < split_index:
+            tr_append(vect)
+        else:
+            xt_append(vect)
 
     train_labels = np.full(shape=[1, len(train_data)], fill_value=label, dtype=np.int32)
     xtrain_labels = np.full(shape=[1, len(xtrain_data)], fill_value=label, dtype=np.int32)
@@ -229,6 +211,8 @@ def get_network(x, in_dim, n_classes, hidden_dim, type):
         return FastNeuralNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
     if type == "threeLayer":
         return ThreeLayerNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
+    if type == "ReLUthreeLayer":
+        return ReLUThreeLayerNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
     else:
         print("Invalid model type", file=sys.stderr)
         return False

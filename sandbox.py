@@ -62,6 +62,14 @@ net.mini_batch_sgd(training_data=X,
 #X2, Y2 = dataset[1]
 #test_set_x, test_set_y = dataset[2]
 
+net = mini_batch_sgd(train_data=X, labels=Y,
+                     xTrain_data=X2, xTrain_labels=Y2,
+                     learning_rate=0.01, L1_reg=0.0, L2_reg=0.001,
+                     epochs=5000, batch_size=20, hidden_dim=[100, 100],
+                     model_type="ReLUthreeLayer", model_file=None,
+                     trained_model_dir="./testRun/")
+
+
 tsv1 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch24_file76_strand.vl.forward.tsv"
 tsv2 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch34_file182_strand.vl.forward.tsv"
 tsv3 = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch4_file149_strand.e.forward.tsv"
@@ -69,27 +77,6 @@ tsv3 = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignmen
 alns = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/"
 #alns = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/"
 
-#a = cull_motif_features_with_noise(747, tsv, True)
-#s = cull_motif_features(354, tsv1, True)
-#s2 = cull_motif_features(354, tsv2, True)
-#d = cull_all_motif_features(354, tsv3, True)
-#print d
-
-#e = sorted(d['354'], key=lambda x: x[1], reverse=True)[:5]
-#print e
-#e = list(chain(*e))
-#print e
-
-#n = np.zeros([10, (5*12)])
-#print n
-#for _ in xrange(len(e)):
-#    n[0, _] = e[_]
-#print n
-
-tr, trlb, ts, tslb = collect_deep_data_vectors(alns, True, 0, 0.5, 747, 100)
-print tr.shape,
-ptr, pts = preprocess_data(tr, ts, "normalize")
-print ptr.shape
 
 
 

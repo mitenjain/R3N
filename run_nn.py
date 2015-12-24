@@ -117,8 +117,8 @@ def main(args):
             "learning_rate": args.learning_rate,
             "L1_reg": args.L1,
             "L2_reg": args.L2,
-            "hidden_dim": [100, 100],  # temp hardcoded
-            "model_type": "threeLayer",  # temp hardcoded
+            "hidden_dim": 100,  # temp hardcoded
+            "model_type": "twoLayer",  # temp hardcoded
             "out_path": args.out,
 
         }

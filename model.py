@@ -14,6 +14,8 @@ import cPickle
 import theano
 import theano.tensor as T
 
+def ReLU(x):
+        return T.switch(x < 0, 0, x)
 
 class Model(object):
     """Base class for network models
@@ -118,6 +120,38 @@ class ThreeLayerNetwork(Model):
         self.params = self.hidden_layer.params + self.hidden_layer2.params + self.softmax_layer.params
         self.input = x
         self.type = "threeLayer"
+
+
+class ReLUThreeLayerNetwork(Model):
+    def __init__(self, x, in_dim, hidden_dim, n_classes):
+        # Note: hidden dim is a list with the dimensions of the hidden layer
+        super(ReLUThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+
+        # first layer (hidden)
+        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=ReLU,
+                                        layer_id='h1')
+
+        # second layer
+        self.hidden_layer2 = HiddenLayer(x=self.hidden_layer.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
+                                         activation=T.tanh, layer_id='h2')
+
+        # final layer (softmax)
+        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[1], out_dim=n_classes,
+                                          id='s1')
+
+        # Regularization
+        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.hidden_layer2.weights).sum() +\
+                  abs(self.softmax_layer.weights).sum()
+        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + abs(self.hidden_layer2.weights).sum() +\
+                     (self.softmax_layer.weights ** 2).sum()
+
+        # output, errors, and likelihood
+        self.y_predict = self.softmax_layer.y_predict
+        self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
+        self.errors = self.softmax_layer.errors
+        self.params = self.hidden_layer.params + self.hidden_layer2.params + self.softmax_layer.params
+        self.input = x
+        self.type = "ReLUthreeLayer"
 
 
 class NeuralNetwork(object):

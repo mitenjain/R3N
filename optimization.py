@@ -111,8 +111,11 @@ def mini_batch_sgd(train_data, labels, xTrain_data, xTrain_labels,
 
         for i in xrange(n_train_batches):
             batch_avg_cost = train_fcn(i)
-            if i % (n_train_batches / 10) == 0:
-                batch_costs.append(float(batch_avg_cost))
+            try:
+                if i % (n_train_batches / 10) == 0:
+                    batch_costs.append(float(batch_avg_cost))
+            except ZeroDivisionError:
+                pass
 
     # pickle the summary stats for the training
     summary = {

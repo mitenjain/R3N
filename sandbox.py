@@ -61,22 +61,28 @@ net.mini_batch_sgd(training_data=X,
 #X, Y = dataset[0]
 #X2, Y2 = dataset[1]
 #test_set_x, test_set_y = dataset[2]
-
+'''
+# Testing Neural Nets #
 net = mini_batch_sgd(train_data=X, labels=Y,
                      xTrain_data=X2, xTrain_labels=Y2,
                      learning_rate=0.01, L1_reg=0.0, L2_reg=0.001,
                      epochs=5000, batch_size=20, hidden_dim=[100, 100],
                      model_type="ReLUthreeLayer", model_file=None,
                      trained_model_dir="./testRun/")
-
+'''
 
 tsv1 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch24_file76_strand.vl.forward.tsv"
 tsv2 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch34_file182_strand.vl.forward.tsv"
 tsv3 = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch4_file149_strand.e.forward.tsv"
+failed_tsv = "../marginAlign/cPecan/tests/test_alignments/failed/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch376_file340_strand.e.forward.tsv"
 
-alns = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/"
-#alns = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/"
+#failed_tsv_path = "../marginAlign/cPecan/tests/test_alignments/failed/"
+#alns = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/"
+alns = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/"
 
+#d = cull_motif_features(747, failed_tsv, True)
+
+collect_data_vectors(1, alns, True, 0, 0.5, 747, 100)
 
 
 

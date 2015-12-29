@@ -10,7 +10,7 @@ import sys
 import theano
 import theano.tensor as T
 import numpy as np
-from utils import collect_data_vectors, shuffle_and_maintain_labels, preprocess_data
+from utils import collect_data_vectors, collect_data_vectors2, shuffle_and_maintain_labels, preprocess_data
 from optimization import mini_batch_sgd, mini_batch_sgd_with_annealing
 
 
@@ -52,16 +52,16 @@ def classify_with_network2(
 
     for i in xrange(iterations):
         c_train, c_tr_labels, c_test, c_xtr_targets = \
-            collect_data_vectors(events_per_pos, c_alignments, forward, 0,
-                                      train_test_split, motif_start_position, max_samples)
+            collect_data_vectors2(events_per_pos, c_alignments, forward, 0,
+                                  train_test_split, motif_start_position, max_samples)
 
         mc_train, mc_tr_labels, mc_test, mc_xtr_targets = \
-            collect_data_vectors(events_per_pos, mc_alignments, forward, 1,
-                                      train_test_split, motif_start_position, max_samples)
+            collect_data_vectors2(events_per_pos, mc_alignments, forward, 1,
+                                  train_test_split, motif_start_position, max_samples)
 
         hmc_train, hmc_tr_labels, hmc_test, hmc_xtr_targets = \
-            collect_data_vectors(events_per_pos, hmc_alignments, forward, 2,
-                                      train_test_split, motif_start_position, max_samples)
+            collect_data_vectors2(events_per_pos, hmc_alignments, forward, 2,
+                                  train_test_split, motif_start_position, max_samples)
 
         assert(len(c_test) > 0 and len(mc_test) > 0 and len(hmc_test) > 0)
         # stack the data into one object

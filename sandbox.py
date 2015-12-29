@@ -7,7 +7,8 @@ from activation_functions import *
 from itertools import chain
 from optimization import *
 import input_data
-
+import pandas as pd
+import timeit
 
 # generating test data
 #X, Y = generate_2_class_moon_data()
@@ -71,18 +72,79 @@ net = mini_batch_sgd(train_data=X, labels=Y,
                      trained_model_dir="./testRun/")
 '''
 
-tsv1 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch24_file76_strand.vl.forward.tsv"
-tsv2 = "../marginAlign/cPecan/tests/test_alignments/conditional_model/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch34_file182_strand.vl.forward.tsv"
-tsv3 = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch4_file149_strand.e.forward.tsv"
-failed_tsv = "../marginAlign/cPecan/tests/test_alignments/failed/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch376_file340_strand.e.forward.tsv"
+'''
+#data = np.loadtxt(tsv_t, dtype=str, usecols=(0, 1, 5, 6, 8, 9, 10))
+data = pd.read_table(tsv_t, usecols=(0, 1, 4, 5, 6, 8, 9, 10), dtype={'ref_pos': np.int32,
+                                                                      'event_idx': np.int32,
+                                                                      'strand': np.str,
+                                                                      'event_mean': np.float64,
+                                                                      'event_noise': np.float64,
+                                                                      'prob': np.float64,
+                                                                      'E_mean': np.float64,
+                                                                      'E_noise': np.float64},
+                     header=None, names=['ref_pos', 'event_idx', 'strand', 'event_mean', 'event_noise', 'prob', 'E_mean', 'E_noise'])
 
-#failed_tsv_path = "../marginAlign/cPecan/tests/test_alignments/failed/"
-#alns = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/"
-alns = "../marginAlign/cPecan/tests/test_alignments/echelon/C/tempFiles_alignment/"
+cytosine_motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
 
-#d = cull_motif_features(747, failed_tsv, True)
+motif_range = range(747, 747 + 6)
 
-collect_data_vectors(1, alns, True, 0, 0.5, 747, 100)
+#motif_rows = data[data['ref_pos'].isin(motif_range)]
+motif_rows = data.ix[(data['ref_pos'].isin(motif_range)) & (data['strand'] == 't')]
+
+print motif_rows
+features = pd.DataFrame({"delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
+                         "posterior": motif_rows['prob']})
+print motif_rows['event_mean'] - motif_rows['E_mean'], motif_rows['prob']
+print features
+'''
+
+'''
+t1 = timeit.Timer("cull_motif_features(747, '../marginAlign/cPecan/tests/temp/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.e.forward.tsv', True)",
+                  setup="from utils import cull_motif_features")
+s1 = t1.timeit(number=1)
+
+t2 = timeit.Timer("cull_motif_features2(747, '../marginAlign/cPecan/tests/temp/tempFiles_alignment/makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.e.forward.tsv', True)",
+                  setup="from utils import cull_motif_features2")
+s2 = t2.timeit(number=1)
+
+print s1, s2, s1/s2
+'''
+
+tsv_t = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/" \
+        "makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.vl.forward.tsv"
+
+aln = "../marginAlign/cPecan/tests/oneFile/"
+
+tr1, tr_l1, xt1, xt_l1 = collect_data_vectors(1, aln, True, 0, 1.0, 757, 100)
+tr, tr_l, xt, xt_l = collect_data_vectors2(1, aln, True, 0, 1.0, 757, 100)
+
+print tr, '\n', tr1
+
+'''
+t1 = timeit.Timer("collect_data_vectors2(2, aln, True, 0, 1.0, 757, 100)",
+                  setup="from utils import collect_data_vectors2 \n"
+                        "aln='../marginAlign/cPecan/tests/oneFile/'")
+s1 = t1.timeit(number=2)
+t2 = timeit.Timer("collect_data_vectors(2, aln, True, 0, 1.0, 757, 100)",
+                  setup="from utils import collect_data_vectors \n"
+                        "aln='../marginAlign/cPecan/tests/oneFile/'")
+s2 = t2.timeit(number=2)
+print s1
+print s2
+print s2/s1
+'''
+#d = cull_motif_features(747, tsv_t, True)
+#print d
+#d2 = cull_motif_features2(747, tsv_t)
+#print d2
+#print d2.groupby('ref_pos').head(2)
+#d747 = d2.ix[d2['ref_pos'] == 747]
+#events = list(chain(*d2.ix[d2['ref_pos'] == 747].drop('ref_pos', 1)[:5].values.tolist()))
+#print len(events)
+#r = d747.sort_values('posterior', ascending=False)
+#print r.drop_duplicates(subset='delta_mean')
+#r = r.drop('ref_pos', 1)
+#l = r.values.tolist()
 
 
 

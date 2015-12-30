@@ -63,7 +63,26 @@ def classify_with_network2(
             collect_data_vectors2(events_per_pos, hmc_alignments, forward, 2,
                                   train_test_split, motif_start_position, max_samples)
 
-        assert(len(c_test) > 0 and len(mc_test) > 0 and len(hmc_test) > 0)
+        nb_c_train = len(c_train)
+        nb_mc_train = len(mc_train)
+        nb_hmc_train = len(hmc_train)
+        assert(nb_c_train > 0 and nb_mc_train > 0 and nb_hmc_train > 0)
+
+        # level training events so that the model gets equal exposure
+        level = np.min([nb_c_train, nb_mc_train, nb_hmc_train])
+        c_train = c_train[:level]
+        c_tr_labels = c_tr_labels[0][:level]
+
+        mc_train = mc_train[:level]
+        mc_tr_labels = mc_tr_labels[0][:level]
+
+        hmc_train = hmc_train[:level]
+        hmc_tr_labels = hmc_tr_labels[0][:level]
+
+        print("{motif}: got {C} C, {mC} mC, and {hmC} hmC, training events, leveled to {level}"
+              .format(motif=motif_start_position, C=len(c_train), mC=len(mc_train),
+                      hmC=len(hmc_train), level=level))
+
         # stack the data into one object
         training_data = np.vstack((c_train, mc_train, hmc_train))
         training_targets = np.append(c_tr_labels, np.append(mc_tr_labels, hmc_tr_labels))
@@ -79,14 +98,14 @@ def classify_with_network2(
         trained_model_dir = "{0}{1}_Models/".format(out_path, motif_start_position)
 
         if learning_algorithm == "annealing":
-            net = mini_batch_sgd_with_annealing(train_data=X, labels=y,
+            net = mini_batch_sgd_with_annealing(motif=motif_start_position, train_data=X, labels=y,
                                                 xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
                                                 learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
                                                 epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
                                                 model_type=model_type, model_file=model_file,
                                                 trained_model_dir=trained_model_dir)
         else:
-            net = mini_batch_sgd(train_data=X, labels=y,
+            net = mini_batch_sgd(motif=motif_start_position, train_data=X, labels=y,
                                  xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
                                  learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
                                  epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,

@@ -8,7 +8,7 @@ import numpy as np
 from utils import shared_dataset, get_network
 
 
-def mini_batch_sgd(train_data, labels, xTrain_data, xTrain_labels,
+def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
                    learning_rate, L1_reg, L2_reg, epochs,
                    batch_size,
                    hidden_dim, model_type, model_file=None,
@@ -84,7 +84,7 @@ def mini_batch_sgd(train_data, labels, xTrain_data, xTrain_labels,
 
     # do the actual training
     best_xtrain_loss = np.inf
-    batch_costs = []
+    batch_costs = [np.inf]
     xtrain_accuracies = []
     xtrain_costs_bin = []
 
@@ -101,7 +101,9 @@ def mini_batch_sgd(train_data, labels, xTrain_data, xTrain_labels,
             xtrain_accuracies.append(avg_xtrain_accuracy)
             xtrain_costs_bin += xtrain_costs
 
-            print("At epoch {0}, cross-train accuracy {1}".format(epoch, avg_xtrain_accuracy), file=sys.stderr)
+            print("{0}: epoch {1}, batch cost {2}, cross-train accuracy {3}".format(motif, epoch, batch_costs[-1],
+                                                                                   avg_xtrain_accuracy),
+                  file=sys.stderr)
 
             # if we're getting better, save the model
             if avg_xtrain_cost < best_xtrain_loss and trained_model_dir is not None:
@@ -129,7 +131,7 @@ def mini_batch_sgd(train_data, labels, xTrain_data, xTrain_labels,
     return net
 
 
-def mini_batch_sgd_with_annealing(train_data, labels, xTrain_data, xTrain_labels,
+def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain_labels,
                                   learning_rate, L1_reg, L2_reg, epochs,
                                   batch_size,
                                   hidden_dim, model_type, model_file=None,
@@ -207,7 +209,7 @@ def mini_batch_sgd_with_annealing(train_data, labels, xTrain_data, xTrain_labels
 
     # do the actual training
     best_xtrain_loss = np.inf
-    batch_costs = []
+    batch_costs = [np.inf]
     xtrain_accuracies = []
     xtrain_costs_bin = []
     prev_xtrain_cost = 1e-10
@@ -225,7 +227,9 @@ def mini_batch_sgd_with_annealing(train_data, labels, xTrain_data, xTrain_labels
             xtrain_accuracies.append(avg_xtrain_accuracy)
             xtrain_costs_bin += xtrain_costs
 
-            print("At epoch {0}, cross-train accuracy {1}".format(epoch, avg_xtrain_accuracy), file=sys.stderr)
+            print("{0}: epoch {1}, batch cost {2}, cross-train accuracy {3}".format(motif, epoch, batch_costs[-1],
+                                                                                    avg_xtrain_accuracy),
+                  file=sys.stderr)
 
             # if we're getting better, save the model
             if avg_xtrain_cost < best_xtrain_loss and trained_model_dir is not None:

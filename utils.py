@@ -24,6 +24,10 @@ def get_motif_range(ref_start, forward, reference_length=891):
 
 
 def cull_motif_features2(motif, tsv, forward=True, kmer_length=6):
+    if forward:
+        strand = "t"
+    else:
+        strand = "c"
     try:
         data = pd.read_table(tsv, usecols=(0, 1, 4, 5, 6, 8, 9, 10),
                              dtype={'ref_pos': np.int32, 'event_idx': np.int32, 'strand': np.str,
@@ -35,7 +39,7 @@ def cull_motif_features2(motif, tsv, forward=True, kmer_length=6):
                                     'event_noise', 'prob', 'E_mean', 'E_noise'])
         motif_range = range(motif, motif + kmer_length)
 
-        motif_rows = data.ix[(data['ref_pos'].isin(motif_range)) & (data['strand'] == 't')]
+        motif_rows = data.ix[(data['ref_pos'].isin(motif_range)) & (data['strand'] == strand)]
 
         features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
                                  "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
@@ -44,7 +48,8 @@ def cull_motif_features2(motif, tsv, forward=True, kmer_length=6):
         if features.empty:
             return False
 
-        f = features.sort_values(['ref_pos', 'posterior'], ascending=[True, False]).drop_duplicates(subset='delta_mean')
+        f = features.sort_values(['ref_pos', 'posterior'], ascending=[True, False])\
+            .drop_duplicates(subset='delta_mean')
         return f
 
     except:
@@ -138,6 +143,11 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
             # sort the events in by decending posterior match prob, only take the first so many, and then
             # turn the list of tuples into a list of floats
             try:
+                # this giant thing takes the DataFrame which has all of the events aligned to the portion we're looking
+                # at, gets only the ones aligned to 'position', removes the ref_position column, takes only the highest
+                # events_per_pos events, turns it into a list of lists, then chains it into one long list. in case you
+                # forgot, the table comes pre-sorted, so when you take the top n events, they are already sorted
+                # in ascending posterior match prob
                 events = list(chain(
                     *motif_table.ix[motif_table['ref_pos'] == position]
                     .drop('ref_pos', 1)[:events_per_pos].values.tolist()))
@@ -154,9 +164,9 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
     train_labels = np.full(shape=[1, len(train_data)], fill_value=label, dtype=np.int32)
     xtrain_labels = np.full(shape=[1, len(xtrain_data)], fill_value=label, dtype=np.int32)
 
-    print("{0}: got {1} training and {2} cross-training vectors for label {3}".format(
-            motif_start, len(train_data), len(xtrain_data), label),
-          file=sys.stderr)
+    #print("{0}: got {1} training and {2} cross-training vectors for label {3}".format(
+    #        motif_start, len(train_data), len(xtrain_data), label),
+    #      file=sys.stderr)
 
     return np.asarray(train_data), train_labels, np.asarray(xtrain_data), xtrain_labels
 

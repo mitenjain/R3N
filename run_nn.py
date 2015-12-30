@@ -70,8 +70,8 @@ def main(args):
     args = parse_args()
 
     # Change network here
-    net_shape = 100
-    net_type = "twoLayer"
+    net_shape = [100, 100]
+    net_type = "ReLUthreeLayer"
 
     start_message = """
 #    Starting Neural Net analysis.
@@ -80,6 +80,7 @@ def main(args):
 #    Forward mapped strand: {forward}.
 #    Network type: {type}
 #    Network dims: {dims}
+#    Learning algorithm: {algo}
 #    Collecting {nb_events} events per reference position.
 #    Batch size: {batch}
 #    Iterations: {iter}.
@@ -91,16 +92,16 @@ def main(args):
 #    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
                                 train_test=args.split, out=args.out, epochs=args.epochs, center=args.preprocess,
                                 L1=args.L1, L2=args.L2, type=net_type, dims=net_shape, nb_events=args.events,
-                                cmd=" ".join(sys.argv[:]), batch=args.batch_size)
+                                cmd=" ".join(sys.argv[:]), batch=args.batch_size, algo=args.learning_algo)
 
     print >> sys.stdout, start_message
 
     if args.null is True:
-        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
-        motifs = [11, 62, 87]
+        motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        #motifs = [11, 62, 87]
     else:
-        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-        motifs = [747, 354]
+        motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        #motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()
@@ -130,8 +131,8 @@ def main(args):
             "out_path": args.out,
 
         }
-        classify_with_network2(**nn_args)  # activate for debugging
-        #work_queue.put(nn_args)
+        #classify_with_network2(**nn_args)  # activate for debugging
+        work_queue.put(nn_args)
 
     for w in xrange(workers):
         p = Process(target=run_nn, args=(work_queue, done_queue))

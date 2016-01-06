@@ -44,6 +44,9 @@ def parse_args():
                         default=0.9, type=float, help="train/test split")
     parser.add_argument('--preprocess', '-p', action='store', required=False, default=None,
                         dest='preprocess', help="options:\nnormalize\ncenter\ndefault:None")
+    parser.add_argument("--feature_set", '-f', action='store', dest='features', required=False,
+                        type=str, default=None, help="pick features: all, mean, noise, default: mean with"
+                                                     " posteriors")
     parser.add_argument('--events', '-ev', action='store', required=True, dest='events', type=int,
                         help='number of events per alignment column to use')
     parser.add_argument('--null', action='store_true', dest='null', required=False, default=False,
@@ -83,6 +86,7 @@ def main(args):
 #    Learning algorithm: {algo}
 #    Collecting {nb_events} events per reference position.
 #    Batch size: {batch}
+#    Non-default feature set: {feature_set}
 #    Iterations: {iter}.
 #    Epochs: {epochs}
 #    Data pre-processing: {center}
@@ -92,16 +96,17 @@ def main(args):
 #    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
                                 train_test=args.split, out=args.out, epochs=args.epochs, center=args.preprocess,
                                 L1=args.L1, L2=args.L2, type=net_type, dims=net_shape, nb_events=args.events,
-                                cmd=" ".join(sys.argv[:]), batch=args.batch_size, algo=args.learning_algo)
+                                cmd=" ".join(sys.argv[:]), batch=args.batch_size, algo=args.learning_algo,
+                                feature_set=args.features)
 
     print >> sys.stdout, start_message
 
     if args.null is True:
-        motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
-        #motifs = [11, 62, 87]
+        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        motifs = [11, 62, 87]
     else:
-        motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-        #motifs = [747, 354]
+        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        motifs = [747, 354]
 
     workers = args.jobs
     work_queue = Manager().Queue()
@@ -117,6 +122,7 @@ def main(args):
             "motif_start_position": motif,
             "preprocess": args.preprocess,
             "events_per_pos": args.events,
+            "feature_set": args.features,
             "learning_algorithm": args.learning_algo,
             "train_test_split": args.split,
             "iterations": args.iter,
@@ -131,8 +137,8 @@ def main(args):
             "out_path": args.out,
 
         }
-        #classify_with_network2(**nn_args)  # activate for debugging
-        work_queue.put(nn_args)
+        classify_with_network2(**nn_args)  # activate for debugging
+        #work_queue.put(nn_args)
 
     for w in xrange(workers):
         p = Process(target=run_nn, args=(work_queue, done_queue))

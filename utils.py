@@ -23,27 +23,53 @@ def get_motif_range(ref_start, forward, reference_length=891):
         return complement_motif_range
 
 
-def cull_motif_features2(motif, tsv, forward=True, kmer_length=6):
+def cull_motif_features3(motif, tsv, feature_set=None, forward=True, kmer_length=6):
     if forward:
         strand = "t"
     else:
         strand = "c"
     try:
         data = pd.read_table(tsv, usecols=(0, 1, 4, 5, 6, 8, 9, 10),
-                             dtype={'ref_pos': np.int32, 'event_idx': np.int32, 'strand': np.str,
-                                    'event_mean': np.float64, 'event_noise': np.float64,
-                                    'prob': np.float64, 'E_mean': np.float64,
+                             dtype={'ref_pos': np.int32,
+                                    'event_idx': np.int32,
+                                    'strand': np.str,
+                                    'event_mean': np.float64,
+                                    'event_noise': np.float64,
+                                    'prob': np.float64,
+                                    'E_mean': np.float64,
                                     'E_noise': np.float64},
                              header=None,
                              names=['ref_pos', 'event_idx', 'strand', 'event_mean',
                                     'event_noise', 'prob', 'E_mean', 'E_noise'])
+
         motif_range = range(motif, motif + kmer_length)
 
         motif_rows = data.ix[(data['ref_pos'].isin(motif_range)) & (data['strand'] == strand)]
+        if feature_set == "mean":
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean']}
+                                    )
+            f = features.sort_values(['ref_pos'], ascending=[True])\
+                .drop_duplicates(subset='delta_mean')
+            return f
+        elif feature_set == "all":
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
+                                     "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise'],
+                                     "posterior": motif_rows['prob']})
+        elif feature_set == "noise":
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
+                                     "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise']}
+                                    )
+            f = features.sort_values(['ref_pos'], ascending=[True])\
+                .drop_duplicates(subset='delta_mean')
+            return f
 
-        features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
-                                 "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
-                                 "posterior": motif_rows['prob']})
+        else:
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
+                                     "posterior": motif_rows['prob']})
 
         if features.empty:
             return False
@@ -96,7 +122,17 @@ def cull_motif_features(start, tsv, forward):
     return feature_dict
 
 
-def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_start, max_samples, kmer_length=6):
+def get_nb_features(feature_set):
+    if feature_set == "mean":
+        return 1
+    elif feature_set == "noise" or feature_set is None:
+        return 2
+    else:
+        return 3
+
+
+def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_start, max_samples,
+                          feature_set=None, kmer_length=6):
     # collect the files
     if forward:
         tsvs = [x for x in os.listdir(path) if x.endswith(".forward.tsv") and os.stat(path + x).st_size != 0]
@@ -106,7 +142,7 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
     # shuffle
     shuffle(tsvs)
 
-    assert(portion < 1.0 and max_samples >= 1)
+    #assert(portion < 1.0 and max_samples >= 1)
 
     if max_samples < len(tsvs):
         tsvs = tsvs[:max_samples]
@@ -120,7 +156,8 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
     # observations) we need:
     # nb_events * nb_event_features * positions
     nb_events_per_column = events_per_pos
-    nb_event_features = 2
+    nb_event_features = get_nb_features(feature_set)
+    print(nb_event_features)
     nb_positions = 6
     # precomputed
     vector_size = nb_events_per_column * nb_event_features * nb_positions
@@ -135,7 +172,8 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
 
     for i, f in enumerate(tsvs):
         # get the dictionary of events aligned to each position
-        motif_table = cull_motif_features2(motif_start, path + f, forward)
+        motif_table = cull_motif_features3(motif=motif_start, tsv=path + f, feature_set=feature_set,
+                                           forward=forward, kmer_length=kmer_length)
         if motif_table is False:
             continue
         vect = np.full(shape=vector_size, fill_value=np.nan)
@@ -266,6 +304,24 @@ def preprocess_data_only_events(training_vectors, test_vectors, preprocess=None)
             # don't norm posteriors
             for i in xrange(0, 12, 2):
                 training_std_vector[(i + 1)] = 1
+            training_vectors /= training_std_vector
+            test_vectors /= training_std_vector
+
+    prc_training_vectors = np.nan_to_num(training_vectors)
+    prc_test_vectors = np.nan_to_num(test_vectors)
+
+    return prc_training_vectors, prc_test_vectors
+
+
+def preprocess_data2(training_vectors, test_vectors, preprocess=None):
+    assert(len(training_vectors.shape) == 2 and len(test_vectors.shape) == 2)
+    if preprocess == "center" or preprocess == "normalize":
+        training_mean_vector = np.nanmean(training_vectors, axis=0)
+        training_vectors -= training_mean_vector
+        test_vectors -= training_mean_vector
+
+        if preprocess == "normalize":
+            training_std_vector = np.nanstd(training_vectors, axis=0)
             training_vectors /= training_std_vector
             test_vectors /= training_std_vector
 

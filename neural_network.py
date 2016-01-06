@@ -32,7 +32,7 @@ def classify_with_network2(
         # alignment files
         c_alignments, mc_alignments, hmc_alignments,
         # which data to use
-        forward, motif_start_position, preprocess, events_per_pos,
+        forward, motif_start_position, preprocess, events_per_pos, feature_set,
         # training params
         learning_algorithm, train_test_split, iterations, epochs, max_samples, batch_size,
         # model params
@@ -53,15 +53,18 @@ def classify_with_network2(
     for i in xrange(iterations):
         c_train, c_tr_labels, c_test, c_xtr_targets = \
             collect_data_vectors2(events_per_pos, c_alignments, forward, 0,
-                                  train_test_split, motif_start_position, max_samples)
+                                  train_test_split, motif_start_position, max_samples,
+                                  feature_set=feature_set)
 
         mc_train, mc_tr_labels, mc_test, mc_xtr_targets = \
             collect_data_vectors2(events_per_pos, mc_alignments, forward, 1,
-                                  train_test_split, motif_start_position, max_samples)
+                                  train_test_split, motif_start_position, max_samples,
+                                  feature_set=feature_set)
 
         hmc_train, hmc_tr_labels, hmc_test, hmc_xtr_targets = \
             collect_data_vectors2(events_per_pos, hmc_alignments, forward, 2,
-                                  train_test_split, motif_start_position, max_samples)
+                                  train_test_split, motif_start_position, max_samples,
+                                  feature_set=feature_set)
 
         nb_c_train = len(c_train)
         nb_mc_train = len(mc_train)

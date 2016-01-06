@@ -10,7 +10,7 @@ import sys
 import theano
 import theano.tensor as T
 import numpy as np
-from utils import collect_data_vectors, collect_data_vectors2, shuffle_and_maintain_labels, preprocess_data
+from utils import collect_data_vectors2, shuffle_and_maintain_labels, preprocess_data
 from optimization import mini_batch_sgd, mini_batch_sgd_with_annealing
 
 

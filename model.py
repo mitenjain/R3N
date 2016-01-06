@@ -11,11 +11,12 @@ import sys
 from itertools import izip
 from layers import HiddenLayer, SoftmaxLayer
 import cPickle
-import theano
 import theano.tensor as T
+
 
 def ReLU(x):
         return T.switch(x < 0, 0, x)
+
 
 class Model(object):
     """Base class for network models
@@ -68,9 +69,9 @@ class Model(object):
             print("got {} missing params".format(missing_params), file=sys.stderr)
 
 
-class FastNeuralNetwork(Model):
+class NeuralNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
-        super(FastNeuralNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        super(NeuralNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
 
         # first layer (hidden)
         self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim, layer_id='h1', activation=T.tanh)
@@ -154,7 +155,7 @@ class ReLUThreeLayerNetwork(Model):
         self.type = "ReLUthreeLayer"
 
 
-class NeuralNetwork(object):
+class VanillaNeuralNet(object):
     """[3], [2]
     A plain vanilla backprop neural network I made from scratch. See citations for the code that inspired
     this implementation

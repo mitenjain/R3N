@@ -15,7 +15,7 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
                    trained_model_dir=None,
                    ):
     """
-
+    :param motif: start position of motif
     :param train_data: np array of training data, (n_examples x n_features)
     :param labels: np array of correct labels, (n_examples).
                    if correct label is 2, then the label is 2 not [0, 0, 1, ...]
@@ -137,7 +137,7 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
                                   hidden_dim, model_type, model_file=None,
                                   trained_model_dir=None):
     """
-
+    :param motif: start position of motif
     :param train_data: np array of training data, (n_examples x n_features)
     :param labels: np array of correct labels, (n_examples).
                    if correct label is 2, then the label is 2 not [0, 0, 1, ...]

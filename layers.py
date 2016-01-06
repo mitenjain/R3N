@@ -54,5 +54,3 @@ class HiddenLayer(object):
         self.input = x
         lin_out = T.dot(x, self.weights) + self.biases
         self.output = lin_out if activation is None else activation(lin_out)
-
-## make double layer?

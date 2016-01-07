@@ -154,6 +154,7 @@ def main(args):
     done_queue.put('STOP')
 
     print >> sys.stderr, "\n\tFinished Neural Net"
+    print >> sys.stdout, "\n\tFinished Neural Net"
 
 
 if __name__ == "__main__":

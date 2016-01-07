@@ -82,7 +82,68 @@ def cull_motif_features3(motif, tsv, feature_set=None, forward=True, kmer_length
         return False
 
 
+def cull_motif_features4(motif, tsv, feature_set=None, forward=True, kmer_length=6):
+    if forward:
+        strand = "t"
+    else:
+        strand = "c"
+    try:
+        data = pd.read_table(tsv, usecols=(1, 4, 5, 6, 7, 10, 11, 12),
+                             dtype={'ref_pos': np.int32,
+                                    'event_idx': np.int32,
+                                    'strand': np.str,
+                                    'event_mean': np.float64,
+                                    'event_noise': np.float64,
+                                    'prob': np.float64,
+                                    'E_mean': np.float64,
+                                    'E_noise': np.float64},
+                             header=None,
+                             names=['ref_pos', 'strand', 'event_idx', 'event_mean',
+                                    'event_noise', 'E_mean', 'E_noise', 'prob']
+                             )
+
+        motif_range = range(motif, motif + kmer_length)
+
+        motif_rows = data.ix[(data['ref_pos'].isin(motif_range)) & (data['strand'] == strand)]
+        if feature_set == "mean":
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean']}
+                                    )
+            f = features.sort_values(['ref_pos'], ascending=[True])\
+                .drop_duplicates(subset='delta_mean')
+            return f
+        elif feature_set == "all":
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
+                                     "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise'],
+                                     "posterior": motif_rows['prob']})
+        elif feature_set == "noise":
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
+                                     "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise']}
+                                    )
+            f = features.sort_values(['ref_pos'], ascending=[True])\
+                .drop_duplicates(subset='delta_mean')
+            return f
+
+        else:
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
+                                     "posterior": motif_rows['prob']})
+
+        if features.empty:
+            return False
+
+        f = features.sort_values(['ref_pos', 'posterior'], ascending=[True, False])\
+            .drop_duplicates(subset='delta_mean')
+        return f
+
+    except:
+        return False
+
+
 def get_nb_features(feature_set):
+    assert(feature_set in ['all', 'mean', 'noise', None]), "invalid feature set"
     if feature_set == "mean":
         return 1
     elif feature_set == "noise" or feature_set is None:
@@ -102,7 +163,7 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
     # shuffle
     shuffle(tsvs)
 
-    assert(portion < 1.0 and max_samples >= 1)
+    #assert(portion < 1.0 and max_samples >= 1)
 
     if max_samples < len(tsvs):
         tsvs = tsvs[:max_samples]
@@ -118,7 +179,7 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
     nb_events_per_column = events_per_pos
     nb_event_features = get_nb_features(feature_set)
     nb_positions = 6
-    # precomputed
+    # precompute the size of the vectors
     vector_size = nb_events_per_column * nb_event_features * nb_positions
     position_idx_offset = nb_events_per_column * nb_event_features
     # containers
@@ -132,7 +193,7 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
 
     for i, f in enumerate(tsvs):
         # get the dictionary of events aligned to each position
-        motif_table = cull_motif_features3(motif=motif_start, tsv=path + f, feature_set=feature_set,
+        motif_table = cull_motif_features4(motif=motif_start, tsv=path + f, feature_set=feature_set,
                                            forward=forward, kmer_length=kmer_length)
         if motif_table is False:
             continue

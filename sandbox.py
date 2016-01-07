@@ -32,13 +32,20 @@ Y2 = [y[1] for y in test]
 tsv_t = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/" \
         "makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.vl.forward.tsv"
 
+tsv_o = "../marginAlign/cPecan/tests/temp/signalalign-v-1230/" \
+        "makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.vl.forward.tsv"
+
+
 aln = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/"
 
 m = 300
-dst = ""
+dst = "all"
 
-features = cull_motif_features3(m, tsv_t, feature_set=dst, forward=True, kmer_length=6)
+features = cull_motif_features4(m, tsv_t, feature_set=dst, forward=True, kmer_length=6)
 print features
+
+features_2 = cull_motif_features3(m, tsv_o, feature_set=dst, forward=True, kmer_length=6)
+print features_2
 
 tr, tr_l, xt, xt_l = collect_data_vectors2(1, aln, True, 0, 1.0, m, 100,
                                            feature_set=dst)

@@ -21,11 +21,17 @@ class SoftmaxLayer(object):
         self.params = [self.weights, self.biases]
 
         self.input = x
+        #self.output = ~T.isnan(self.prob_y_given_x(x)).any(axis=1)
         self.output = self.prob_y_given_x(x)
+        # maybe put a switch here to check for nan/equivalent probs
         self.y_predict = T.argmax(self.output, axis=1)
 
     def prob_y_given_x(self, input_data):
         return T.nnet.softmax(T.dot(input_data, self.weights) + self.biases)
+
+    def prob_y_given_x2(self, input_data):
+        return T.switch(T.isnan(T.nnet.softmax(T.dot(input_data, self.weights) + self.biases)),
+                        0, T.nnet.softmax(T.dot(input_data, self.weights) + self.biases))
 
     def negative_log_likelihood(self, labels):
         return -T.mean(T.log(self.output)[T.arange(labels.shape[0]), labels])

@@ -27,7 +27,6 @@ Y = np.asarray(Y)
 X2 = np.array([x[0] for x in test])
 Y2 = [y[1] for y in test]
 '''
-# Testing Neural Nets #
 
 tsv_t = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/" \
         "makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.vl.forward.tsv"
@@ -36,40 +35,35 @@ tsv_o = "../marginAlign/cPecan/tests/temp/signalalign-v-1230/" \
         "makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.vl.forward.tsv"
 
 
-aln = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/"
+aln = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/*.tsv"
+aln2 = "../marginAlign/cPecan/tests/test_alignments/newf_conditional_model/C/tempFiles_alignment/*.forward.tsv"
 
-m = 300
-dst = "all"
+m = [300, 3000]
+dst = "mean"
+strand = "t"
 
-features = cull_motif_features4(m, tsv_t, feature_set=dst, forward=True, kmer_length=6)
+features = cull_motif_features4(m, tsv_t, strand, feature_set=dst, kmer_length=6)
 print features
 
-features_2 = cull_motif_features3(m, tsv_o, feature_set=dst, forward=True, kmer_length=6)
-print features_2
-
-tr, tr_l, xt, xt_l = collect_data_vectors2(1, aln, True, 0, 1.0, m, 100,
-                                           feature_set=dst)
-print tr
-
-
-#d = cull_motif_features(747, tsv_t, True)
-#print d
-#d2 = cull_motif_features2(747, tsv_t)
-#print d2
-#print d2.groupby('ref_pos').head(2)
-#d747 = d2.ix[d2['ref_pos'] == 747]
-#events = list(chain(*d2.ix[d2['ref_pos'] == 747].drop('ref_pos', 1)[:5].values.tolist()))
-#print len(events)
-#r = d747.sort_values('posterior', ascending=False)
-#print r.drop_duplicates(subset='delta_mean')
-#r = r.drop('ref_pos', 1)
-#l = r.values.tolist()
+#events = []
+#for strand in ["t", "c"]:
+#    events += list(chain(
+#                         *features.ix[(features['ref_pos'] == 300) & (features['strand'] == strand)]
+#                         .drop(['ref_pos', 'strand'], 1)[:1].values.tolist()))
 
 
+tr, trl, xt, xtl = collect_data_vectors2(events_per_pos=1,
+                                         label=0,
+                                         portion=1.0,
+                                         files=aln2,
+                                         strand=strand,
+                                         motif_starts=m,
+                                         dataset_title="test",
+                                         max_samples=10,
+                                         feature_set=dst
+                                         )
 
-
-
-
+print tr, trl
 
 
 

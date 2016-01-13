@@ -28,11 +28,37 @@ def predict(test_data, true_labels, model, model_file=None):
     return errors
 
 
-def classify_with_network2(
+def predict2(test_data, true_labels, model, model_file=None):
+    if model_file is not None:
+        model.load(model_file)
+    y = T.ivector('y')
+    predict_fcn = theano.function(inputs=[model.input],
+                                  outputs=model.y_predict,
+                                  )
+    prob_fcn = theano.function(inputs=[model.input],
+                               outputs=model.output,
+                               )
+    error_fcn = theano.function(inputs=[model.input, y],
+                                outputs=model.errors(y),
+                                )
+    errors = error_fcn(test_data, true_labels)
+
+    predictions = predict_fcn(test_data)
+    #print(predictions)
+    probs = prob_fcn(test_data)
+    for _ in zip(probs, predictions):
+        print(">", _)
+    #probs = probs[~np.isnan(probs).any(axis=1)]
+    #for _ in probs:
+    #    print(_)
+    return errors
+
+
+def classify_with_network3(
         # alignment files
-        c_alignments, mc_alignments, hmc_alignments,
+        group_1, group_2, group_3,  # these arguments should be strings that are used as the file suffix
         # which data to use
-        forward, motif_start_position, preprocess, events_per_pos, feature_set,
+        strand, motif_start_positions, preprocess, events_per_pos, feature_set, title,
         # training params
         learning_algorithm, train_test_split, iterations, epochs, max_samples, batch_size,
         # model params
@@ -40,31 +66,50 @@ def classify_with_network2(
         # output params
         out_path="./"):
 
-    if forward:
-        direction_label = ".forward"
-    else:
-        direction_label = ".backward"
-
-    out_file = open(out_path + str(motif_start_position) + direction_label + ".tsv", 'wa')
+    out_file = open(out_path + title + ".tsv", 'wa')
 
     # bin to hold accuracies for each iteration
     scores = []
 
     for i in xrange(iterations):
         c_train, c_tr_labels, c_test, c_xtr_targets = \
-            collect_data_vectors2(events_per_pos, c_alignments, forward, 0,
-                                  train_test_split, motif_start_position, max_samples,
-                                  feature_set=feature_set)
+            collect_data_vectors2(events_per_pos=events_per_pos,
+                                  label=0,
+                                  portion=train_test_split,
+                                  files=group_1,
+                                  strand=strand,
+                                  motif_starts=motif_start_positions,
+                                  dataset_title=title+"group0",
+                                  max_samples=max_samples,
+                                  feature_set=feature_set,
+                                  kmer_length=6
+                                  )
 
         mc_train, mc_tr_labels, mc_test, mc_xtr_targets = \
-            collect_data_vectors2(events_per_pos, mc_alignments, forward, 1,
-                                  train_test_split, motif_start_position, max_samples,
-                                  feature_set=feature_set)
+            collect_data_vectors2(events_per_pos=events_per_pos,
+                                  label=1,
+                                  portion=train_test_split,
+                                  files=group_2,
+                                  strand=strand,
+                                  motif_starts=motif_start_positions,
+                                  dataset_title=title+"group1",
+                                  max_samples=max_samples,
+                                  feature_set=feature_set,
+                                  kmer_length=6
+                                  )
 
         hmc_train, hmc_tr_labels, hmc_test, hmc_xtr_targets = \
-            collect_data_vectors2(events_per_pos, hmc_alignments, forward, 2,
-                                  train_test_split, motif_start_position, max_samples,
-                                  feature_set=feature_set)
+            collect_data_vectors2(events_per_pos=events_per_pos,
+                                  label=2,
+                                  portion=train_test_split,
+                                  files=group_3,
+                                  strand=strand,
+                                  motif_starts=motif_start_positions,
+                                  dataset_title=title+"group2",
+                                  max_samples=max_samples,
+                                  feature_set=feature_set,
+                                  kmer_length=6
+                                  )
 
         nb_c_train = len(c_train)
         nb_mc_train = len(mc_train)
@@ -73,6 +118,11 @@ def classify_with_network2(
 
         # level training events so that the model gets equal exposure
         level = np.min([nb_c_train, nb_mc_train, nb_hmc_train])
+
+        print("{motif}: got {C} C, {mC} mC, and {hmC} hmC, training vectors, leveled to {level}"
+              .format(motif=title, C=nb_c_train, mC=nb_mc_train,
+                      hmC=nb_hmc_train, level=level))
+
         c_train = c_train[:level]
         c_tr_labels = c_tr_labels[0][:level]
 
@@ -81,10 +131,6 @@ def classify_with_network2(
 
         hmc_train = hmc_train[:level]
         hmc_tr_labels = hmc_tr_labels[0][:level]
-
-        print("{motif}: got {C} C, {mC} mC, and {hmC} hmC, training events, leveled to {level}"
-              .format(motif=motif_start_position, C=len(c_train), mC=len(mc_train),
-                      hmC=len(hmc_train), level=level))
 
         # stack the data into one object
         training_data = np.vstack((c_train, mc_train, hmc_train))
@@ -98,17 +144,17 @@ def classify_with_network2(
 
         X, y = shuffle_and_maintain_labels(prc_train, training_targets)
 
-        trained_model_dir = "{0}{1}_Models/".format(out_path, motif_start_position)
+        trained_model_dir = "{0}{1}_Models/".format(out_path, title)
 
         if learning_algorithm == "annealing":
-            net = mini_batch_sgd_with_annealing(motif=motif_start_position, train_data=X, labels=y,
+            net = mini_batch_sgd_with_annealing(motif=title, train_data=X, labels=y,
                                                 xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
                                                 learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
                                                 epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
                                                 model_type=model_type, model_file=model_file,
                                                 trained_model_dir=trained_model_dir)
         else:
-            net = mini_batch_sgd(motif=motif_start_position, train_data=X, labels=y,
+            net = mini_batch_sgd(motif=title, train_data=X, labels=y,
                                  xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
                                  learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
                                  epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
@@ -120,7 +166,6 @@ def classify_with_network2(
         out_file.write("{}\n".format(errors))
         scores.append(errors)
 
-    print(">{motif}\t{accuracy}".format(motif=motif_start_position, accuracy=np.mean(scores), end="\n"), file=out_file)
+    print(">{motif}\t{accuracy}".format(motif=title, accuracy=np.mean(scores), end="\n"), file=out_file)
     return net
-
 

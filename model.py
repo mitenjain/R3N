@@ -87,6 +87,7 @@ class NeuralNetwork(Model):
         self.y_predict = self.softmax_layer.y_predict
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.errors = self.softmax_layer.errors
+        self.output = self.softmax_layer.output
         self.params = self.hidden_layer.params + self.softmax_layer.params
         self.input = x
         self.type = "twoLayer"
@@ -118,6 +119,7 @@ class ThreeLayerNetwork(Model):
         self.y_predict = self.softmax_layer.y_predict
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.errors = self.softmax_layer.errors
+        self.output = self.softmax_layer.output
         self.params = self.hidden_layer.params + self.hidden_layer2.params + self.softmax_layer.params
         self.input = x
         self.type = "threeLayer"
@@ -149,6 +151,7 @@ class ReLUThreeLayerNetwork(Model):
         # output, errors, and likelihood
         self.y_predict = self.softmax_layer.y_predict
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
+        self.output = self.softmax_layer.output
         self.errors = self.softmax_layer.errors
         self.params = self.hidden_layer.params + self.hidden_layer2.params + self.softmax_layer.params
         self.input = x

@@ -219,20 +219,20 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
         # evaluation of training progress and summary stat collection
         if epoch % check_frequency == 0:
             # collect the costs on the cross-train data
-            xtrain_costs = [xtrain_fcn(_) for _ in xrange(n_xtrain_batches)]
-            avg_xtrain_cost = np.mean(xtrain_costs)
-            avg_xtrain_accuracy = 100 * (1 - avg_xtrain_cost)
+            xtrain_errors = [xtrain_fcn(_) for _ in xrange(n_xtrain_batches)]
+            avg_xtrain_errors = np.mean(xtrain_errors)
+            avg_xtrain_accuracy = 100 * (1 - avg_xtrain_errors)
 
             # collect stuff for plotting
             xtrain_accuracies.append(avg_xtrain_accuracy)
-            xtrain_costs_bin += xtrain_costs
+            xtrain_costs_bin += xtrain_errors
 
             print("{0}: epoch {1}, batch cost {2}, cross-train accuracy {3}".format(motif, epoch, batch_costs[-1],
                                                                                     avg_xtrain_accuracy),
                   file=sys.stderr)
 
             # if we're getting better, save the model
-            if avg_xtrain_cost < best_xtrain_loss and trained_model_dir is not None:
+            if avg_xtrain_errors < best_xtrain_loss and trained_model_dir is not None:
                 if not os.path.exists(trained_model_dir):
                     os.makedirs(trained_model_dir)
                 net.write("{0}model{1}.pkl".format(trained_model_dir, epoch))
@@ -246,10 +246,7 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
         mean_xtrain_cost = np.mean([xtrain_fcn(_) for _ in xrange(n_xtrain_batches)])
         if mean_xtrain_cost / prev_xtrain_cost < 1.0:
             dynamic_learning_rate *= 0.9
-            #print("ADJUST, mean xTrain cost {0}, prev {1} epoch {2}, adjusted {3}".format(mean_xtrain_cost,
-            #                                                                              prev_xtrain_cost,
-            #                                                                              epoch,
-            #                                                                              dynamic_learning_rate))
+
         if mean_xtrain_cost > prev_xtrain_cost:
             #print("GOT WORSE")
             dynamic_learning_rate *= 1.05
@@ -259,7 +256,7 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
     summary = {
         "batch_costs": batch_costs,
         "xtrain_accuracies": xtrain_accuracies,
-        "xtrain_costs": xtrain_costs_bin
+        "xtrain_errors": xtrain_costs_bin
     }
     with open("{}summary_stats.pkl".format(trained_model_dir), 'w') as f:
         cPickle.dump(summary, f)

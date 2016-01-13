@@ -5,6 +5,7 @@ from __future__ import print_function
 import os
 import theano
 import sys
+import glob
 import pandas as pd
 import numpy as np
 import theano.tensor as T
@@ -13,80 +14,12 @@ from model import NeuralNetwork, ThreeLayerNetwork, ReLUThreeLayerNetwork
 from random import shuffle
 
 
-def get_motif_range(ref_start, forward, reference_length=891):
-    kmer_length = 6
-    if forward:
-        template_motif_range = range(ref_start, ref_start + kmer_length)
-        return template_motif_range
-    if not forward:
-        complement_motif_range = range(ref_start, ref_start + kmer_length)
-        return complement_motif_range
+def get_motif_range(motifs, kmer_length=6):
+    return list(chain(*[range(s, s+kmer_length) for s in motifs]))
 
 
-def cull_motif_features3(motif, tsv, feature_set=None, forward=True, kmer_length=6):
-    if forward:
-        strand = "t"
-    else:
-        strand = "c"
-    try:
-        data = pd.read_table(tsv, usecols=(0, 1, 4, 5, 6, 8, 9, 10),
-                             dtype={'ref_pos': np.int32,
-                                    'event_idx': np.int32,
-                                    'strand': np.str,
-                                    'event_mean': np.float64,
-                                    'event_noise': np.float64,
-                                    'prob': np.float64,
-                                    'E_mean': np.float64,
-                                    'E_noise': np.float64},
-                             header=None,
-                             names=['ref_pos', 'event_idx', 'strand', 'event_mean',
-                                    'event_noise', 'prob', 'E_mean', 'E_noise'])
+def cull_motif_features4(motif, tsv, strand, feature_set=None, kmer_length=6):
 
-        motif_range = range(motif, motif + kmer_length)
-
-        motif_rows = data.ix[(data['ref_pos'].isin(motif_range)) & (data['strand'] == strand)]
-        if feature_set == "mean":
-            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
-                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean']}
-                                    )
-            f = features.sort_values(['ref_pos'], ascending=[True])\
-                .drop_duplicates(subset='delta_mean')
-            return f
-        elif feature_set == "all":
-            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
-                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
-                                     "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise'],
-                                     "posterior": motif_rows['prob']})
-        elif feature_set == "noise":
-            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
-                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
-                                     "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise']}
-                                    )
-            f = features.sort_values(['ref_pos'], ascending=[True])\
-                .drop_duplicates(subset='delta_mean')
-            return f
-
-        else:
-            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
-                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
-                                     "posterior": motif_rows['prob']})
-
-        if features.empty:
-            return False
-
-        f = features.sort_values(['ref_pos', 'posterior'], ascending=[True, False])\
-            .drop_duplicates(subset='delta_mean')
-        return f
-
-    except:
-        return False
-
-
-def cull_motif_features4(motif, tsv, feature_set=None, forward=True, kmer_length=6):
-    if forward:
-        strand = "t"
-    else:
-        strand = "c"
     try:
         data = pd.read_table(tsv, usecols=(1, 4, 5, 6, 7, 10, 11, 12),
                              dtype={'ref_pos': np.int32,
@@ -102,39 +35,53 @@ def cull_motif_features4(motif, tsv, feature_set=None, forward=True, kmer_length
                                     'event_noise', 'E_mean', 'E_noise', 'prob']
                              )
 
-        motif_range = range(motif, motif + kmer_length)
+        motif_events = get_motif_range(motif, kmer_length=kmer_length)
 
-        motif_rows = data.ix[(data['ref_pos'].isin(motif_range)) & (data['strand'] == strand)]
+        if strand in ["t", "c"]:
+            motif_rows = data.ix[(data['ref_pos'].isin(motif_events)) & (data['strand'] == strand)]
+        else:
+            motif_rows = data.ix[(data['ref_pos'].isin(motif_events))]
+
         if feature_set == "mean":
             features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
-                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean']}
+                                     "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
+                                     "strand": motif_rows['strand']}
                                     )
-            f = features.sort_values(['ref_pos'], ascending=[True])\
+
+            f = features.sort_values(['ref_pos', 'strand'], ascending=[True, False])\
                 .drop_duplicates(subset='delta_mean')
             return f
+
         elif feature_set == "all":
             features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
                                      "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
                                      "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise'],
-                                     "posterior": motif_rows['prob']})
+                                     "posterior": motif_rows['prob'],
+                                     "strand": motif_rows['strand']}
+                                    )
+
         elif feature_set == "noise":
             features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
                                      "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
-                                     "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise']}
+                                     "delta_noise": motif_rows['event_noise'] - motif_rows['E_noise'],
+                                     "strand": motif_rows['strand']}
                                     )
-            f = features.sort_values(['ref_pos'], ascending=[True])\
+
+            f = features.sort_values(['ref_pos', 'strand'], ascending=[True, False])\
                 .drop_duplicates(subset='delta_mean')
             return f
 
         else:
             features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
                                      "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
-                                     "posterior": motif_rows['prob']})
+                                     "posterior": motif_rows['prob'],
+                                     "strand": motif_rows['strand']}
+                                    )
 
         if features.empty:
             return False
 
-        f = features.sort_values(['ref_pos', 'posterior'], ascending=[True, False])\
+        f = features.sort_values(['ref_pos', 'strand', 'posterior'], ascending=[True, False, False])\
             .drop_duplicates(subset='delta_mean')
         return f
 
@@ -152,13 +99,12 @@ def get_nb_features(feature_set):
         return 3
 
 
-def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_start, max_samples,
+def collect_data_vectors2(events_per_pos, label, portion, files, strand,
+                          motif_starts, dataset_title,
+                          max_samples,
                           feature_set=None, kmer_length=6):
     # collect the files
-    if forward:
-        tsvs = [x for x in os.listdir(path) if x.endswith(".forward.tsv") and os.stat(path + x).st_size != 0]
-    else:
-        tsvs = [x for x in os.listdir(path) if x.endswith(".backward.tsv") and os.stat(path + x).st_size != 0]
+    tsvs = [x for x in glob.glob(files) if os.stat(x).st_size != 0]
 
     # shuffle
     shuffle(tsvs)
@@ -172,57 +118,59 @@ def collect_data_vectors2(events_per_pos, path, forward, label, portion, motif_s
     split_index = int(portion * len(tsvs))
 
     # container for training and test data
-    # for the echelon alignments, we allow for a defined number  aligned events, each event has
-    # two features (diff. mean, and posterior), there are 6 positions, so for each read (set of
-    # observations) we need:
-    # nb_events * nb_event_features * positions
+    # for the echelon alignments, we allow for a defined number of aligned events, there are 6 positions,
+    # so for each read (set of observations) we need:
+    # (nb_events * nb_event_features * positions) * number_of_strands
     nb_events_per_column = events_per_pos
     nb_event_features = get_nb_features(feature_set)
     nb_positions = 6
+
+    strands = [strand] if strand == "t" or strand == "c" else ["t", "c"]
+    nb_strands = len(strands)
+
     # precompute the size of the vectors
-    vector_size = nb_events_per_column * nb_event_features * nb_positions
+    vector_size = (nb_events_per_column * nb_event_features * nb_positions) * nb_strands
     position_idx_offset = nb_events_per_column * nb_event_features
+
     # containers
     train_data = []
     tr_append = train_data.append
     xtrain_data = []
     xt_append = xtrain_data.append
 
-    print("{0}: Getting vectors from {1}, collecting {2} features".format(motif_start, path, nb_event_features),
+    print("{0}: Getting vectors from {1}, collecting {2} features".format(dataset_title, files, nb_event_features),
           end='\n', file=sys.stderr)
 
     for i, f in enumerate(tsvs):
-        # get the dictionary of events aligned to each position
-        motif_table = cull_motif_features4(motif=motif_start, tsv=path + f, feature_set=feature_set,
-                                           forward=forward, kmer_length=kmer_length)
+        # get the dataFrame of all features for all motif positions for this file
+        motif_table = cull_motif_features4(motif=motif_starts, tsv=f, feature_set=feature_set,
+                                           strand=strand, kmer_length=kmer_length)
         if motif_table is False:
             continue
-        vect = np.full(shape=vector_size, fill_value=np.nan)
-        for idx, position in enumerate(xrange(motif_start, motif_start + kmer_length)):
-            # sort the events in by decending posterior match prob, only take the first so many, and then
-            # turn the list of tuples into a list of floats
-            try:
+        for motif_start in motif_starts:
+            vect = np.full(shape=vector_size, fill_value=np.nan)
+            for idx, position in enumerate(xrange(motif_start, motif_start + nb_positions)):
                 # this giant thing takes the DataFrame which has all of the events aligned to the portion we're looking
                 # at, gets only the ones aligned to 'position', removes the ref_position column, takes only the highest
                 # events_per_pos events, turns it into a list of lists, then chains it into one long list. in case you
                 # forgot, the table comes pre-sorted, so when you take the top n events, they are already sorted
-                # in ascending posterior match prob
-                events = list(chain(
-                    *motif_table.ix[motif_table['ref_pos'] == position]
-                    .drop('ref_pos', 1)[:events_per_pos].values.tolist()))
-                # add them to the feature vector
-                for _ in xrange(len(events)):
-                    vect[(idx * position_idx_offset) + _] = events[_]
-            except KeyError:
-                continue
-        if i < split_index:
-            tr_append(vect)
-        else:
-            xt_append(vect)
+                # in descending posterior match prob
+                events = []
+                for o, s in enumerate(strands):
+                    events += list(chain(
+                        *motif_table.ix[(motif_table['ref_pos'] == position) & (motif_table['strand'] == s)]
+                        .drop(['ref_pos', 'strand'], 1)[:events_per_pos].values.tolist()))
+                    # add them to the feature vector
+                    for _ in xrange(len(events)):
+                        vect[((idx * position_idx_offset) * (o + 1)) + _] = events[_]
+
+            if i < split_index:
+                tr_append(vect)
+            else:
+                xt_append(vect)
 
     train_labels = np.full(shape=[1, len(train_data)], fill_value=label, dtype=np.int32)
     xtrain_labels = np.full(shape=[1, len(xtrain_data)], fill_value=label, dtype=np.int32)
-
     return np.asarray(train_data), train_labels, np.asarray(xtrain_data), xtrain_labels
 
 

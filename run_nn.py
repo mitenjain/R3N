@@ -2,7 +2,7 @@
 """Run a SVM on collected alignment data
 """
 import sys
-from neural_network import classify_with_network2
+from neural_network import classify_with_network3
 from argparse import ArgumentParser
 from multiprocessing import Process, current_process, Manager
 
@@ -20,8 +20,8 @@ def parse_args():
     parser.add_argument('--hmC_files', '-hmc', action='store',
                         dest='hmc_files', required=True, type=str, default=None,
                         help="directory with hmC files")
-    parser.add_argument('--backward', '-bw', action='store_false', dest='forward',
-                        default=True, help='forward mapped reads?')
+    parser.add_argument('--strand', '-st', action='store', dest='strand', required=True,
+                        type=str, help="which strand to use, options = {t, c, both}")
     parser.add_argument('-nb_files', '-nb', action='store', dest='nb_files', required=False,
                         default=50, type=int, help="maximum number of reads to use")
     parser.add_argument('--jobs', '-j', action='store', dest='jobs', required=False,
@@ -51,6 +51,8 @@ def parse_args():
                         help='number of events per alignment column to use')
     parser.add_argument('--null', action='store_true', dest='null', required=False, default=False,
                         help="classify null motifs")
+    parser.add_argument('--title', action='store', dest='title', type=str,
+                        required=False, default="default title")
     parser.add_argument('--output_location', '-o', action='store', dest='out',
                         required=True, type=str, default=None,
                         help="directory to put results")
@@ -63,7 +65,7 @@ def run_nn(work_queue, done_queue):
     try:
         for f in iter(work_queue.get, 'STOP'):
             #classify_with_network(**f)
-            n = classify_with_network2(**f)
+            n = classify_with_network3(**f)
             #networks.append(n)
     except Exception:
         done_queue.put("%s failed" % current_process().name)
@@ -73,16 +75,16 @@ def main(args):
     args = parse_args()
 
     # Change network here
-    net_shape = [50, 10]
+    net_shape = [100, 100]
     net_type = "ReLUthreeLayer"
 
     assert (args.features in [None, "mean", "noise", "all"]), "invalid feature subset selection"
 
     start_message = """
-#    Starting Neural Net analysis.
+#    Starting Neural Net analysis for {title}.
 #    Command line: {cmd}
 #    Looking at {nbFiles} files.
-#    Forward mapped strand: {forward}.
+#    Using events from strand {strand}
 #    Network type: {type}
 #    Network dims: {dims}
 #    Learning algorithm: {algo}
@@ -95,20 +97,22 @@ def main(args):
 #    Train/test split: {train_test}
 #    L1 reg: {L1}
 #    L2 reg: {L2}
-#    Output to: {out}""".format(nbFiles=args.nb_files, forward=args.forward, iter=args.iter,
+#    Output to: {out}""".format(nbFiles=args.nb_files, strand=args.strand, iter=args.iter,
                                 train_test=args.split, out=args.out, epochs=args.epochs, center=args.preprocess,
                                 L1=args.L1, L2=args.L2, type=net_type, dims=net_shape, nb_events=args.events,
                                 cmd=" ".join(sys.argv[:]), batch=args.batch_size, algo=args.learning_algo,
-                                feature_set=args.features)
+                                feature_set=args.features, title=args.title)
 
     print >> sys.stdout, start_message
 
     if args.null is True:
-        motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
+        #motifs = [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]
         #motifs = [11, 62, 87]
+        motifs = [[11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]]
     else:
-        motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
-        #motifs = [747, 354]
+        #motifs = [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]
+        #motifs = [[747], [354]]
+        motifs = [[747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]]
 
     workers = args.jobs
     work_queue = Manager().Queue()
@@ -117,14 +121,15 @@ def main(args):
 
     for motif in motifs:
         nn_args = {
-            "c_alignments": args.c_files,
-            "mc_alignments": args.mc_files,
-            "hmc_alignments": args.hmc_files,
-            "forward": args.forward,
-            "motif_start_position": motif,
+            "group_1": args.c_files,
+            "group_2": args.mc_files,
+            "group_3": args.hmc_files,
+            "strand": args.strand,
+            "motif_start_positions": motif,
             "preprocess": args.preprocess,
             "events_per_pos": args.events,
             "feature_set": args.features,
+            "title": args.title + " ",
             "learning_algorithm": args.learning_algo,
             "train_test_split": args.split,
             "iterations": args.iter,
@@ -137,9 +142,8 @@ def main(args):
             "hidden_dim": net_shape,  # temp hardcoded
             "model_type": net_type,  # temp hardcoded
             "out_path": args.out,
-
         }
-        #classify_with_network2(**nn_args)  # activate for debugging
+        #classify_with_network3(**nn_args)  # activate for debugging
         work_queue.put(nn_args)
 
     for w in xrange(workers):

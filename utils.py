@@ -109,7 +109,7 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
     # shuffle
     shuffle(tsvs)
 
-    #assert(portion < 1.0 and max_samples >= 1)
+    assert(portion < 1.0 and max_samples >= 1)
 
     if max_samples < len(tsvs):
         tsvs = tsvs[:max_samples]

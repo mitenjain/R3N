@@ -138,7 +138,8 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
     xtrain_data = []
     xt_append = xtrain_data.append
 
-    print("{0}: Getting vectors from {1}, collecting {2} features".format(dataset_title, files, nb_event_features),
+    print("{0}: Getting vectors from {1}, collecting {2} features per site".format(dataset_title,
+                                                                                   files, nb_event_features),
           end='\n', file=sys.stderr)
 
     for i, f in enumerate(tsvs):
@@ -171,6 +172,10 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
 
     train_labels = np.full(shape=[1, len(train_data)], fill_value=label, dtype=np.int32)
     xtrain_labels = np.full(shape=[1, len(xtrain_data)], fill_value=label, dtype=np.int32)
+
+    np.random.shuffle(train_data)
+    np.random.shuffle(xtrain_data)
+
     return np.asarray(train_data), train_labels, np.asarray(xtrain_data), xtrain_labels
 
 

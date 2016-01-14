@@ -35,15 +35,15 @@ tsv_o = "../marginAlign/cPecan/tests/temp/signalalign-v-1230/" \
         "makeson_PC_MA_286_R7.3_ZYMO_C_1_09_11_15_1714_1_ch1_file1_strand.vl.forward.tsv"
 
 
-aln = "../marginAlign/cPecan/tests/temp/tempFiles_alignment/*.tsv"
+aln = "../marginAlign/cPecan/tests/temp/hide/*.forward.tsv"
 aln2 = "../marginAlign/cPecan/tests/test_alignments/newf_conditional_model/C/tempFiles_alignment/*.forward.tsv"
 
-m = [300, 3000]
+m = [300, 50, 10, 3000]
 dst = "mean"
 strand = "t"
 
-features = cull_motif_features4(m, tsv_t, strand, feature_set=dst, kmer_length=6)
-print features
+#features = cull_motif_features4(m, tsv_t, strand, feature_set=dst, kmer_length=6)
+#print features
 
 #events = []
 #for strand in ["t", "c"]:
@@ -55,7 +55,7 @@ print features
 tr, trl, xt, xtl = collect_data_vectors2(events_per_pos=1,
                                          label=0,
                                          portion=1.0,
-                                         files=aln2,
+                                         files=aln,
                                          strand=strand,
                                          motif_starts=m,
                                          dataset_title="test",

@@ -153,8 +153,8 @@ d['title'] = "ecoli_CCTGG"
 j['sites'].append(d)
 cPickle.dump(j, open("./configs/ecoli_CCTGG.pkl", 'w'))
 ###############################################################################
-ecoli_pos_intersect_A = TargetRegions("../marginAlign/cPecan/tests/ecoli_positive_intersect_A.tsv")
-ecoli_neg_intersect_A = TargetRegions("../marginAlign/cPecan/tests/ecoli_negative_intersect_A.tsv")
+ecoli_pos_intersect_A = TargetRegions("./regions/ecoli_positive_intersect_A.tsv")
+ecoli_neg_intersect_A = TargetRegions("./regions/ecoli_negative_intersect_A.tsv")
 pos_int_A_list = [x[0] for x in ecoli_pos_intersect_A.region_array]
 neg_int_A_list = [x[0] for x in ecoli_neg_intersect_A.region_array]
 

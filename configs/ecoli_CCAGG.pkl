@@ -1,7 +1,7 @@
 (dp1
 S'model_type'
 p2
-S'threeLayer'
+S'ReLUthreeLayer'
 p3
 sS'experiment_name'
 p4
@@ -10,8 +10,8 @@ p5
 sS'hidden_dim'
 p6
 (lp7
-I50
-aI50
+I500
+aI500
 asS'sites'
 p8
 (lp9

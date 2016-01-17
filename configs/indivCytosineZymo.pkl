@@ -10,8 +10,8 @@ p5
 sS'hidden_dim'
 p6
 (lp7
-I100
-aI100
+I50
+aI10
 asS'sites'
 p8
 (lp9

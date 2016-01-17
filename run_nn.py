@@ -35,7 +35,7 @@ def parse_args():
                         default=None, action='store', type=str, help="options: \"annealing\"")
     parser.add_argument('--epochs', '-ep', action='store', dest='epochs', required=False,
                         default=10000, type=int, help="number of iterations to do")
-    parser.add_argument('--batch_size', '-b', action='store', dest='batch_size', required=True, type=int,
+    parser.add_argument('--batch_size', '-b', action='store', dest='batch_size', required=False, type=int,
                         default=None, help='specify batch size')
     parser.add_argument('--learning_rate', '-e', action='store', dest='learning_rate',
                         required=False, default=0.01, type=float)
@@ -119,6 +119,15 @@ def main(args):
     done_queue = Manager().Queue()
     jobs = []
 
+    try:
+        extra_args = config['extra_args']
+        batch_size = extra_args['batch_size']
+    except KeyError:
+        extra_args = None
+        batch_size = args.batch_size
+
+    assert(batch_size is not None), "You need to specify batch_size with a flag or have it in the config file"
+
     for experiment in config['sites']:
         nn_args = {
             "group_1": args.group_1,
@@ -135,15 +144,16 @@ def main(args):
             "iterations": args.iter,
             "epochs": args.epochs,
             "max_samples": args.nb_files,
-            "batch_size": args.batch_size,
+            "batch_size": batch_size,
             "learning_rate": args.learning_rate,
             "L1_reg": args.L1,
             "L2_reg": args.L2,
             "hidden_dim": config['hidden_dim'],
             "model_type": config['model_type'],
+            "extra_args": extra_args,
             "out_path": args.out,
         }
-        #classify_with_network2(**nn_args)  # activate for debugging
+        #classify_with_network3(**nn_args)  # activate for debugging
         work_queue.put(nn_args)
 
     for w in xrange(workers):

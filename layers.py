@@ -3,19 +3,21 @@ from __future__ import print_function
 import numpy as np
 import theano
 import theano.tensor as T
+from theano.tensor.signal import downsample
+from theano.tensor.nnet import conv
 
 # globals
 rng = np.random.RandomState()
 
 
 class SoftmaxLayer(object):
-    def __init__(self, x, in_dim, out_dim, id):
+    def __init__(self, x, in_dim, out_dim, layer_id):
         self.weights = theano.shared(value=np.zeros([in_dim, out_dim], dtype=theano.config.floatX),
-                                     name=id+'weights',
+                                     name=layer_id + 'weights',
                                      borrow=True
                                      )
         self.biases = theano.shared(value=np.zeros([out_dim], dtype=theano.config.floatX),
-                                    name=id+'biases',
+                                    name=layer_id + 'biases',
                                     borrow=True
                                     )
         self.params = [self.weights, self.biases]
@@ -60,3 +62,44 @@ class HiddenLayer(object):
         self.input = x
         lin_out = T.dot(x, self.weights) + self.biases
         self.output = lin_out if activation is None else activation(lin_out)
+
+
+class ConvPoolLayer(object):
+    def __init__(self, x, filter_shape, image_shape, poolsize, layer_id):
+        #assert(image_shape[1] == filter_shape[1])
+
+        self.input = x
+
+        fan_in = np.prod(filter_shape[1:])
+        fan_out = (filter_shape[0] * np.prod(filter_shape[2:]) / np.prod(poolsize))
+
+        W_bound = np.sqrt(6. / (fan_in + fan_out))
+
+        self.weights = theano.shared(
+            np.asarray(
+                rng.uniform(low=-W_bound, high=W_bound, size=filter_shape),
+                dtype=theano.config.floatX
+            ),
+            borrow=True
+        )
+
+        b_values = np.zeros((filter_shape[0],), dtype=theano.config.floatX)
+        self.biases = theano.shared(value=b_values, borrow=True)
+
+        conv_out = conv.conv2d(
+            input=x,
+            filters=self.weights,
+            filter_shape=filter_shape,
+            image_shape=image_shape
+        )
+
+        pooled_out = downsample.max_pool_2d(
+            input=conv_out,
+            ds=poolsize,
+            ignore_border=True
+        )
+
+        self.output = T.tanh(pooled_out + self.biases.dimshuffle('x', 0, 'x', 'x'))
+
+        self.params = [self.weights, self.biases]
+

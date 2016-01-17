@@ -14,15 +14,20 @@ def load_iris_dataset():
     return X, y
 
 
-def load_digit_dataset(dataset_size, split):
+def dummy():
+    print "!!!!!\ndummy!!!!!\ndummy!!!!!\ndummy"
+
+
+def load_digit_dataset(split):
     data = sklearn.datasets.load_digits()
     X = data.data
     y = data.target
     whole_dataset = zip(X, y)
     shuffle(whole_dataset)
-    whole_dataset = whole_dataset[:dataset_size]
-    train_dataset = whole_dataset[:int(dataset_size * (1 - split))]
-    test_dataset = whole_dataset[int(dataset_size * (1 - split)):]
+    split_point = int(len(X) * split)
+
+    train_dataset = whole_dataset[:split_point]
+    test_dataset = whole_dataset[split_point:]
 
     return train_dataset, test_dataset
 

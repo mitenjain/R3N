@@ -4,7 +4,7 @@ from toy_datasets import *
 from neural_network import *
 from sklearn import preprocessing
 from utils import *
-from activation_functions import *
+
 from itertools import chain
 from optimization import *
 import input_data
@@ -38,8 +38,8 @@ tsv_o = "../marginAlign/cPecan/tests/temp/signalalign-v-1230/" \
 aln = "../marginAlign/cPecan/tests/temp/hide/*.forward.tsv"
 aln2 = "../marginAlign/cPecan/tests/test_alignments/newf_conditional_model/C/tempFiles_alignment/*.forward.tsv"
 
-m = [300, 50, 10, 3000]
-dst = "mean"
+m = [300]
+dst = "all"
 strand = "t"
 
 #features = cull_motif_features4(m, tsv_t, strand, feature_set=dst, kmer_length=6)
@@ -64,6 +64,8 @@ tr, trl, xt, xtl = collect_data_vectors2(events_per_pos=1,
                                          )
 
 print tr, trl
+
+print "!\n", tr[0].reshape([3, 6]), "!\n"
 
 
 

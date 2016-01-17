@@ -12,25 +12,8 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
                    learning_rate, L1_reg, L2_reg, epochs,
                    batch_size,
                    hidden_dim, model_type, model_file=None,
-                   trained_model_dir=None,
+                   trained_model_dir=None, verbose=True, extra_args=None
                    ):
-    """
-    :param motif: start position of motif
-    :param train_data: np array of training data, (n_examples x n_features)
-    :param labels: np array of correct labels, (n_examples).
-                   if correct label is 2, then the label is 2 not [0, 0, 1, ...]
-    :param xTrain_data: same as train_data but for cross-training
-    :param xTrain_labels: see labels
-    :param learning_rate: learning rate used in parameter updating
-    :param L1_reg: L1 regularization
-    :param L2_reg: L2 regularization
-    :param epochs: number of training epochs
-    :param batch_size: split the training and cross-training data into batches this size
-    :param hidden_dim: list of ints or int, dimensions of hidden layer in network
-    :param model_type: Type
-    :param model_file: Optional, file to load network from
-    :return: trained model
-    """
     # Preamble #
     # determine dimensionality of data and number of classes
     n_train_samples, data_dim = train_data.shape
@@ -48,7 +31,8 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
     x = T.matrix('x')
     y = T.ivector('y')
 
-    net = get_network(x=x, in_dim=data_dim, n_classes=n_classes, hidden_dim=hidden_dim, type=model_type)
+    net = get_network(x=x, in_dim=data_dim, n_classes=n_classes, hidden_dim=hidden_dim, model_type=model_type,
+                      extra_args=extra_args)
 
     if net is False:
         return False
@@ -101,9 +85,10 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
             xtrain_accuracies.append(avg_xtrain_accuracy)
             xtrain_costs_bin += xtrain_costs
 
-            print("{0}: epoch {1}, batch cost {2}, cross-train accuracy {3}".format(motif, epoch, batch_costs[-1],
-                                                                                   avg_xtrain_accuracy),
-                  file=sys.stderr)
+            if verbose:
+                print("{0}: epoch {1}, batch cost {2}, cross-train accuracy {3}".format(motif, epoch, batch_costs[-1],
+                                                                                        avg_xtrain_accuracy),
+                      file=sys.stderr)
 
             # if we're getting better, save the model
             if avg_xtrain_cost < best_xtrain_loss and trained_model_dir is not None:
@@ -125,17 +110,18 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
         "xtrain_accuracies": xtrain_accuracies,
         "xtrain_costs": xtrain_costs_bin
     }
-    with open("{}summary_stats.pkl".format(trained_model_dir), 'w') as f:
-        cPickle.dump(summary, f)
+    if trained_model_dir is not None:
+        with open("{}summary_stats.pkl".format(trained_model_dir), 'w') as f:
+            cPickle.dump(summary, f)
 
-    return net
+    return net, summary
 
 
 def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain_labels,
                                   learning_rate, L1_reg, L2_reg, epochs,
                                   batch_size,
                                   hidden_dim, model_type, model_file=None,
-                                  trained_model_dir=None):
+                                  trained_model_dir=None, verbose=False, extra_args=None):
     """
     :param motif: start position of motif
     :param train_data: np array of training data, (n_examples x n_features)
@@ -170,7 +156,8 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
     x = T.matrix('x')
     y = T.ivector('y')
 
-    net = get_network(x=x, in_dim=data_dim, n_classes=n_classes, hidden_dim=hidden_dim, type=model_type)
+    net = get_network(x=x, in_dim=data_dim, n_classes=n_classes, hidden_dim=hidden_dim, model_type=model_type,
+                      extra_args=extra_args)
 
     if net is False:
         return False
@@ -227,9 +214,11 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
             xtrain_accuracies.append(avg_xtrain_accuracy)
             xtrain_costs_bin += xtrain_errors
 
-            print("{0}: epoch {1}, batch cost {2}, cross-train accuracy {3}".format(motif, epoch, batch_costs[-1],
-                                                                                    avg_xtrain_accuracy),
-                  file=sys.stderr)
+            if verbose:
+                print("{0}: epoch {1}, batch cost {2}, cross-train accuracy {3}".format(motif, epoch,
+                                                                                        batch_costs[-1],
+                                                                                        avg_xtrain_accuracy),
+                      file=sys.stderr)
 
             # if we're getting better, save the model
             if avg_xtrain_errors < best_xtrain_loss and trained_model_dir is not None:
@@ -258,7 +247,8 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
         "xtrain_accuracies": xtrain_accuracies,
         "xtrain_errors": xtrain_costs_bin
     }
-    with open("{}summary_stats.pkl".format(trained_model_dir), 'w') as f:
-        cPickle.dump(summary, f)
+    if trained_model_dir is not None:
+        with open("{}summary_stats.pkl".format(trained_model_dir), 'w') as f:
+            cPickle.dump(summary, f)
 
-    return net
+    return net, summary

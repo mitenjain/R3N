@@ -18,6 +18,7 @@ def predict(test_data, true_labels, model, model_file=None):
     if model_file is not None:
         model.load(model_file)
     y = T.ivector('y')
+    #test_data = test_data.reshape(3, 6)
     #predict_fcn = theano.function(inputs=[model.input],
     #                              outputs=model.y_predict,
     #                              )
@@ -62,12 +63,11 @@ def classify_with_network3(
         # training params
         learning_algorithm, train_test_split, iterations, epochs, max_samples, batch_size,
         # model params
-        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None,
+        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None, extra_args=None,
         # output params
         out_path="./"):
 
     assert(len(motif_start_positions) >= 3)
-    print("Running 3-way classification")
 
     out_file = open(out_path + title + ".tsv", 'wa')
 
@@ -163,19 +163,19 @@ def classify_with_network3(
         trained_model_dir = "{0}{1}_Models/".format(out_path, title)
 
         if learning_algorithm == "annealing":
-            net = mini_batch_sgd_with_annealing(motif=title, train_data=X, labels=y,
+            net, summary = mini_batch_sgd_with_annealing(motif=title, train_data=X, labels=y,
                                                 xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
                                                 learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
                                                 epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
-                                                model_type=model_type, model_file=model_file,
+                                                model_type=model_type, model_file=model_file, extra_args=extra_args,
                                                 trained_model_dir=trained_model_dir)
         else:
-            net = mini_batch_sgd(motif=title, train_data=X, labels=y,
-                                 xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
-                                 learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
-                                 epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
-                                 model_type=model_type, model_file=model_file,
-                                 trained_model_dir=trained_model_dir)
+            net, summary = mini_batch_sgd(motif=title, train_data=X, labels=y,
+                                          xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
+                                          learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
+                                          epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
+                                          model_type=model_type, model_file=model_file, extra_args=extra_args,
+                                          trained_model_dir=trained_model_dir)
 
         errors = predict(xtrain_data, xtrain_targets, net)
         errors = 1 - errors
@@ -194,12 +194,11 @@ def classify_with_network2(
         # training params
         learning_algorithm, train_test_split, iterations, epochs, max_samples, batch_size,
         # model params
-        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None,
+        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None, extra_args=None,
         # output params
         out_path="./"):
 
     assert(len(motif_start_positions) >= 2)
-    print("Running 2-way classification")
 
     out_file = open(out_path + title + ".tsv", 'wa')
 
@@ -273,18 +272,18 @@ def classify_with_network2(
         trained_model_dir = "{0}{1}_Models/".format(out_path, title)
 
         if learning_algorithm == "annealing":
-            net = mini_batch_sgd_with_annealing(motif=title, train_data=X, labels=y,
+            net, summary = mini_batch_sgd_with_annealing(motif=title, train_data=X, labels=y,
                                                 xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
                                                 learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
                                                 epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
-                                                model_type=model_type, model_file=model_file,
+                                                model_type=model_type, model_file=model_file, extra_args=extra_args,
                                                 trained_model_dir=trained_model_dir)
         else:
-            net = mini_batch_sgd(motif=title, train_data=X, labels=y,
+            net, summary = mini_batch_sgd(motif=title, train_data=X, labels=y,
                                  xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
                                  learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
                                  epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
-                                 model_type=model_type, model_file=model_file,
+                                 model_type=model_type, model_file=model_file, extra_args=extra_args,
                                  trained_model_dir=trained_model_dir)
 
         errors = predict(xtrain_data, xtrain_targets, net)
@@ -294,4 +293,3 @@ def classify_with_network2(
 
     print(">{motif}\t{accuracy}".format(motif=title, accuracy=np.mean(scores), end="\n"), file=out_file)
     return net
-

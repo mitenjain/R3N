@@ -10,7 +10,8 @@ import pandas as pd
 import numpy as np
 import theano.tensor as T
 from itertools import chain
-from model import NeuralNetwork, ThreeLayerNetwork, ReLUThreeLayerNetwork
+from model import NeuralNetwork, ThreeLayerNetwork, ReLUThreeLayerNetwork, \
+    FourLayerNetwork, FourLayerReLUNetwork, ConvolutionalNetwork3
 from random import shuffle
 
 
@@ -109,7 +110,7 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
     # shuffle
     shuffle(tsvs)
 
-    assert(portion < 1.0 and max_samples >= 1)
+    #assert(portion < 1.0 and max_samples >= 1)
 
     if max_samples < len(tsvs):
         tsvs = tsvs[:max_samples]
@@ -207,13 +208,20 @@ def preprocess_data(training_vectors, test_vectors, preprocess=None):
     return prc_training_vectors, prc_test_vectors
 
 
-def get_network(x, in_dim, n_classes, hidden_dim, type):
-    if type == "twoLayer":
+def get_network(x, in_dim, n_classes, hidden_dim, model_type, extra_args=None):
+    if model_type == "twoLayer":
         return NeuralNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
-    if type == "threeLayer":
+    if model_type == "threeLayer":
         return ThreeLayerNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
-    if type == "ReLUthreeLayer":
+    if model_type == "ReLUthreeLayer":
         return ReLUThreeLayerNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
+    if model_type == "fourLayer":
+        return FourLayerNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
+    if model_type == "ReLUfourLayer":
+        return FourLayerReLUNetwork(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
+    if model_type == "ConvNet3":
+        return ConvolutionalNetwork3(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim,
+                                     **extra_args)
     else:
         print("Invalid model type", file=sys.stderr)
         return False

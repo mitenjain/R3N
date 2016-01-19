@@ -79,9 +79,9 @@ j = {
     "sites": []
 }
 for m in [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]:
-    m = [m]
+    m_list = [m]
     d = dict()
-    d['motif_start_position'] = [m, m, m]
+    d['motif_start_position'] = [m_list, m_list, m_list]
     d['title'] = str(m)
     j['sites'].append(d)
 cPickle.dump(j, open("./configs/indivNullZymo.pkl", 'w'))

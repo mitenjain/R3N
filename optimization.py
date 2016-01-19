@@ -8,7 +8,7 @@ import numpy as np
 from utils import shared_dataset, get_network
 
 
-def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
+def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_targets,
                    learning_rate, L1_reg, L2_reg, epochs,
                    batch_size,
                    hidden_dim, model_type, model_file=None,
@@ -21,7 +21,7 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
 
     # compute number of mini-batches for training, validation and testing
     train_set_x, train_set_y = shared_dataset(train_data, labels, True)
-    xtrain_set_x, xtrain_set_y = shared_dataset(xTrain_data, xTrain_labels, True)
+    xtrain_set_x, xtrain_set_y = shared_dataset(xTrain_data, xTrain_targets, True)
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
     n_xtrain_batches = xtrain_set_x.get_value(borrow=True).shape[0] / batch_size
 
@@ -117,28 +117,11 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_labels,
     return net, summary
 
 
-def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain_labels,
+def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain_targets,
                                   learning_rate, L1_reg, L2_reg, epochs,
                                   batch_size,
                                   hidden_dim, model_type, model_file=None,
                                   trained_model_dir=None, verbose=False, extra_args=None):
-    """
-    :param motif: start position of motif
-    :param train_data: np array of training data, (n_examples x n_features)
-    :param labels: np array of correct labels, (n_examples).
-                   if correct label is 2, then the label is 2 not [0, 0, 1, ...]
-    :param xTrain_data: same as train_data but for cross-training
-    :param xTrain_labels: see labels
-    :param learning_rate: learning rate used in parameter updating
-    :param L1_reg: L1 regularization
-    :param L2_reg: L2 regularization
-    :param epochs: number of training epochs
-    :param batch_size: split the training and cross-training data into batches this size
-    :param hidden_dim: list of ints or int, dimensions of hidden layer in network
-    :param model_type: Type
-    :param model_file: Optional, file to load network from
-    :return: trained model
-    """
     # Preamble #
     # determine dimensionality of data and number of classes
     n_train_samples, data_dim = train_data.shape
@@ -146,7 +129,7 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
 
     # compute number of mini-batches for training, validation and testing
     train_set_x, train_set_y = shared_dataset(train_data, labels, True)
-    xtrain_set_x, xtrain_set_y = shared_dataset(xTrain_data, xTrain_labels, True)
+    xtrain_set_x, xtrain_set_y = shared_dataset(xTrain_data, xTrain_targets, True)
     n_train_batches = train_set_x.get_value(borrow=True).shape[0] / batch_size
     n_xtrain_batches = xtrain_set_x.get_value(borrow=True).shape[0] / batch_size
 

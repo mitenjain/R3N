@@ -104,21 +104,16 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
                           motif_starts, dataset_title,
                           max_samples,
                           feature_set=None, kmer_length=6):
+    assert(portion < 1.0 and max_samples >= 1)
+
     # collect the files
     tsvs = [x for x in glob.glob(files) if os.stat(x).st_size != 0]
-
-    # shuffle
     shuffle(tsvs)
-
-    #assert(portion < 1.0 and max_samples >= 1)
 
     if max_samples < len(tsvs):
         tsvs = tsvs[:max_samples]
 
-    # get the number of files we're going to use
-    split_index = int(portion * len(tsvs))
-
-    # container for training and test data
+    # container for feature vectors
     # for the echelon alignments, we allow for a defined number of aligned events, there are 6 positions,
     # so for each read (set of observations) we need:
     # (nb_events * nb_event_features * positions) * number_of_strands
@@ -134,10 +129,8 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
     position_idx_offset = nb_events_per_column * nb_event_features
 
     # containers
-    train_data = []
-    tr_append = train_data.append
-    xtrain_data = []
-    xt_append = xtrain_data.append
+    dataset = []
+    dataset_append = dataset.append
 
     print("{0}: Getting vectors from {1}, collecting {2} features per site".format(dataset_title,
                                                                                    files, nb_event_features),
@@ -165,19 +158,19 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
                     # add them to the feature vector
                     for _ in xrange(len(events)):
                         vect[((idx * position_idx_offset) * (o + 1)) + _] = events[_]
+            dataset_append(vect)
 
-            if i < split_index:
-                tr_append(vect)
-            else:
-                xt_append(vect)
+    total_vectors = len(dataset)
+    labels = np.full(shape=[1, total_vectors], fill_value=label, dtype=np.int32)
 
-    train_labels = np.full(shape=[1, len(train_data)], fill_value=label, dtype=np.int32)
-    xtrain_labels = np.full(shape=[1, len(xtrain_data)], fill_value=label, dtype=np.int32)
+    train_split = int(portion * total_vectors)
+    xtrain_split = int(train_split + 0.5 * ((1 - portion) * total_vectors))
 
-    np.random.shuffle(train_data)
-    np.random.shuffle(xtrain_data)
+    np.random.shuffle(dataset)
 
-    return np.asarray(train_data), train_labels, np.asarray(xtrain_data), xtrain_labels
+    return (np.asarray(dataset[:train_split]), labels[0][:train_split]), \
+           (np.asarray(dataset[train_split:xtrain_split]), labels[0][train_split:xtrain_split]), \
+           (np.asarray(dataset[xtrain_split:]), labels[0][xtrain_split:])
 
 
 def shuffle_and_maintain_labels(data, labels):
@@ -190,22 +183,25 @@ def shuffle_and_maintain_labels(data, labels):
     return np.asarray(X), y
 
 
-def preprocess_data(training_vectors, test_vectors, preprocess=None):
-    assert(len(training_vectors.shape) == 2 and len(test_vectors.shape) == 2)
+def preprocess_data(training_vectors, xtrain_vectors, test_vectors, preprocess=None):
+    assert(len(training_vectors.shape) == 2 and len(xtrain_vectors.shape) == 2 and len(test_vectors.shape) == 2)
     if preprocess == "center" or preprocess == "normalize":
         training_mean_vector = np.nanmean(training_vectors, axis=0)
         training_vectors -= training_mean_vector
+        xtrain_vectors -= training_mean_vector
         test_vectors -= training_mean_vector
 
         if preprocess == "normalize":
             training_std_vector = np.nanstd(training_vectors, axis=0)
             training_vectors /= training_std_vector
+            xtrain_vectors /= training_std_vector
             test_vectors /= training_std_vector
 
     prc_training_vectors = np.nan_to_num(training_vectors)
+    prc_xtrain_vectors = np.nan_to_num(xtrain_vectors)
     prc_test_vectors = np.nan_to_num(test_vectors)
 
-    return prc_training_vectors, prc_test_vectors
+    return prc_training_vectors, prc_xtrain_vectors, prc_test_vectors
 
 
 def get_network(x, in_dim, n_classes, hidden_dim, model_type, extra_args=None):
@@ -249,7 +245,6 @@ def shared_dataset(data_x, data_y, borrow=True):
         # ``shared_y`` we will have to cast it to int. This little hack
         # lets ous get around this issue
         return shared_x, T.cast(shared_y, 'int32')
-
 
 
 

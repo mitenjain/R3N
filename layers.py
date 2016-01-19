@@ -6,8 +6,9 @@ import theano.tensor as T
 from theano.tensor.signal import downsample
 from theano.tensor.nnet import conv
 
+
 # globals
-rng = np.random.RandomState()
+RNG = np.random.RandomState()
 
 
 class SoftmaxLayer(object):
@@ -23,17 +24,12 @@ class SoftmaxLayer(object):
         self.params = [self.weights, self.biases]
 
         self.input = x
-        #self.output = ~T.isnan(self.prob_y_given_x(x)).any(axis=1)
         self.output = self.prob_y_given_x(x)
         # maybe put a switch here to check for nan/equivalent probs
         self.y_predict = T.argmax(self.output, axis=1)
 
     def prob_y_given_x(self, input_data):
         return T.nnet.softmax(T.dot(input_data, self.weights) + self.biases)
-
-    def prob_y_given_x2(self, input_data):
-        return T.switch(T.isnan(T.nnet.softmax(T.dot(input_data, self.weights) + self.biases)),
-                        0, T.nnet.softmax(T.dot(input_data, self.weights) + self.biases))
 
     def negative_log_likelihood(self, labels):
         return -T.mean(T.log(self.output)[T.arange(labels.shape[0]), labels])
@@ -45,7 +41,7 @@ class SoftmaxLayer(object):
 class HiddenLayer(object):
     def __init__(self, x, in_dim, out_dim, layer_id, W=None, b=None, activation=T.tanh):
         if W is None:
-            W_values = np.asarray(rng.uniform(low=-np.sqrt(6. / (in_dim + out_dim)),
+            W_values = np.asarray(RNG.uniform(low=-np.sqrt(6. / (in_dim + out_dim)),
                                               high=np.sqrt(6. / (in_dim + out_dim)),
                                               size=(in_dim, out_dim)),
                                   dtype=theano.config.floatX
@@ -66,7 +62,7 @@ class HiddenLayer(object):
 
 class ConvPoolLayer(object):
     def __init__(self, x, filter_shape, image_shape, poolsize, layer_id):
-        #assert(image_shape[1] == filter_shape[1])
+        assert(image_shape[1] == filter_shape[1])
 
         self.input = x
 
@@ -77,7 +73,7 @@ class ConvPoolLayer(object):
 
         self.weights = theano.shared(
             np.asarray(
-                rng.uniform(low=-W_bound, high=W_bound, size=filter_shape),
+                RNG.uniform(low=-W_bound, high=W_bound, size=filter_shape),
                 dtype=theano.config.floatX
             ),
             borrow=True
@@ -96,6 +92,7 @@ class ConvPoolLayer(object):
         pooled_out = downsample.max_pool_2d(
             input=conv_out,
             ds=poolsize,
+            # todo put more options here
             ignore_border=True
         )
 

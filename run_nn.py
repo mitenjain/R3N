@@ -60,23 +60,17 @@ def parse_args():
 
 
 def run_nn3(work_queue, done_queue):
-    #networks = []
     try:
         for f in iter(work_queue.get, 'STOP'):
-            #classify_with_network(**f)
             n = classify_with_network3(**f)
-            #networks.append(n)
     except Exception:
         done_queue.put("%s failed" % current_process().name)
 
 
 def run_nn2(work_queue, done_queue):
-    #networks = []
     try:
         for f in iter(work_queue.get, 'STOP'):
-            #classify_with_network(**f)
             n = classify_with_network2(**f)
-            #networks.append(n)
     except Exception:
         done_queue.put("%s failed" % current_process().name)
 
@@ -87,6 +81,15 @@ def main(args):
     assert(args.features in [None, "mean", "noise", "all"]), "invalid feature subset selection"
 
     config = cPickle.load(open(args.config, 'r'))
+
+    try:
+            extra_args = config['extra_args']
+            batch_size = extra_args['batch_size']
+    except KeyError:
+            extra_args = None
+            batch_size = args.batch_size
+
+    assert(batch_size is not None), "You need to specify batch_size with a flag or have it in the config file"
 
     start_message = """
 #    Starting Neural Net analysis for {title}
@@ -110,7 +113,7 @@ def main(args):
                                 train_test=args.split, out=args.out, epochs=args.epochs, center=args.preprocess,
                                 L1=args.L1, L2=args.L2, type=config['model_type'], dims=config['hidden_dim'],
                                 nb_events=args.events,cmd=" ".join(sys.argv[:]), title=config['experiment_name'],
-                                batch=args.batch_size, algo=args.learning_algo,
+                                batch=batch_size, algo=args.learning_algo,
                                 feature_set=args.features, config=args.config)
 
     print >> sys.stdout, start_message
@@ -118,15 +121,6 @@ def main(args):
     work_queue = Manager().Queue()
     done_queue = Manager().Queue()
     jobs = []
-
-    try:
-        extra_args = config['extra_args']
-        batch_size = extra_args['batch_size']
-    except KeyError:
-        extra_args = None
-        batch_size = args.batch_size
-
-    assert(batch_size is not None), "You need to specify batch_size with a flag or have it in the config file"
 
     for experiment in config['sites']:
         nn_args = {
@@ -153,7 +147,7 @@ def main(args):
             "extra_args": extra_args,
             "out_path": args.out,
         }
-        #classify_with_network3(**nn_args)  # activate for debugging
+        #classify_with_network2(**nn_args)  # activate for debugging
         work_queue.put(nn_args)
 
     for w in xrange(workers):

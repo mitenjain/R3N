@@ -30,6 +30,7 @@ class Model(object):
         self.in_dim = in_dim
         self.n_classes = n_classes
         self.params = None
+        self.initialized = False
 
     def write(self, file_path):
         """Write model to file, using cPickle
@@ -71,48 +72,57 @@ class Model(object):
 
 class NeuralNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
+        assert(len(hidden_dim) == 1)
         super(NeuralNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
 
+        self.input = x
+
         # first layer (hidden)
-        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim, layer_id='h1', activation=T.tanh)
+        self.hidden_layer0 = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], layer_id='h1', activation=T.tanh)
 
         # final layer (softmax)
-        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer.output, in_dim=hidden_dim, out_dim=n_classes, layer_id='s1')
+        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer0.output, in_dim=hidden_dim[0], out_dim=n_classes,
+                                          layer_id='s0')
 
         # Regularization
-        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.softmax_layer.weights).sum()
-        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
+        self.L1 = abs(self.hidden_layer0.weights).sum() + abs(self.softmax_layer.weights).sum()
+        self.L2_sq = (self.hidden_layer0.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
 
         # output, errors, and likelihood
         self.y_predict = self.softmax_layer.y_predict
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.errors = self.softmax_layer.errors
         self.output = self.softmax_layer.output
-        self.params = self.hidden_layer.params + self.softmax_layer.params
-        self.input = x
+        self.params = self.hidden_layer0.params + self.softmax_layer.params
+
+
+        # network type
         self.type = "twoLayer"
 
 
 class ThreeLayerNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
+        assert(len(hidden_dim) == 2)
         # Note: hidden dim is a list with the dimensions of the hidden layer
         super(ThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
 
+        self.input = x
+
         # first layer (hidden)
-        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=T.tanh, layer_id='h1')
+        self.hidden_layer0 = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=T.tanh, layer_id='h0')
 
         # second layer
-        self.hidden_layer2 = HiddenLayer(x=self.hidden_layer.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
-                                         activation=T.tanh, layer_id='h2')
+        self.hidden_layer1 = HiddenLayer(x=self.hidden_layer0.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
+                                         activation=T.tanh, layer_id='h1')
 
         # final layer (softmax)
-        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[1], out_dim=n_classes,
-                                          layer_id='s1')
+        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer1.output, in_dim=hidden_dim[1], out_dim=n_classes,
+                                          layer_id='s0')
 
         # Regularization
-        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.hidden_layer2.weights).sum() +\
+        self.L1 = abs(self.hidden_layer0.weights).sum() + abs(self.hidden_layer1.weights).sum() + \
                   abs(self.softmax_layer.weights).sum()
-        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + abs(self.hidden_layer2.weights ** 2).sum() +\
+        self.L2_sq = (self.hidden_layer0.weights ** 2).sum() + abs(self.hidden_layer1.weights ** 2).sum() + \
                      (self.softmax_layer.weights ** 2).sum()
 
         # output, errors, and likelihood
@@ -120,32 +130,35 @@ class ThreeLayerNetwork(Model):
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.errors = self.softmax_layer.errors
         self.output = self.softmax_layer.output
-        self.params = self.hidden_layer.params + self.hidden_layer2.params + self.softmax_layer.params
-        self.input = x
+        self.params = self.hidden_layer0.params + self.hidden_layer1.params + self.softmax_layer.params
+        # type
         self.type = "threeLayer"
 
 
 class ReLUThreeLayerNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
+        assert(len(hidden_dim) == 2)
         # Note: hidden dim is a list with the dimensions of the hidden layer
         super(ReLUThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
 
+        self.input = x
+
         # first layer (hidden)
-        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=ReLU,
-                                        layer_id='h1')
+        self.hidden_layer0 = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=ReLU,
+                                         layer_id='h0')
 
         # second layer
-        self.hidden_layer2 = HiddenLayer(x=self.hidden_layer.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
-                                         activation=T.tanh, layer_id='h2')
+        self.hidden_layer1 = HiddenLayer(x=self.hidden_layer0.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
+                                         activation=T.tanh, layer_id='h1')
 
         # final layer (softmax)
-        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[1], out_dim=n_classes,
-                                          layer_id='s1')
+        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer1.output, in_dim=hidden_dim[1], out_dim=n_classes,
+                                          layer_id='s0')
 
         # Regularization
-        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.hidden_layer2.weights).sum() +\
+        self.L1 = abs(self.hidden_layer0.weights).sum() + abs(self.hidden_layer1.weights).sum() + \
                   abs(self.softmax_layer.weights).sum()
-        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + abs(self.hidden_layer2.weights ** 2).sum() +\
+        self.L2_sq = (self.hidden_layer0.weights ** 2).sum() + abs(self.hidden_layer1.weights ** 2).sum() + \
                      (self.softmax_layer.weights ** 2).sum()
 
         # output, errors, and likelihood
@@ -153,41 +166,42 @@ class ReLUThreeLayerNetwork(Model):
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.output = self.softmax_layer.output
         self.errors = self.softmax_layer.errors
-        self.params = self.hidden_layer.params + self.hidden_layer2.params + self.softmax_layer.params
-        self.input = x
+        self.params = self.hidden_layer0.params + self.hidden_layer1.params + self.softmax_layer.params
+
         self.type = "ReLUthreeLayer"
 
 
 class FourLayerNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
+        assert(len(hidden_dim) == 3)
         super(FourLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
 
         # first layer (hidden)
-        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=T.tanh, layer_id='h1')
+        self.hidden_layer0 = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=T.tanh, layer_id='h0')
 
         # second layer
-        self.hidden_layer2 = HiddenLayer(x=self.hidden_layer.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
+        self.hidden_layer1 = HiddenLayer(x=self.hidden_layer0.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
+                                         activation=T.tanh, layer_id='h1')
+        # third layer
+        self.hidden_layer2 = HiddenLayer(x=self.hidden_layer1.output, in_dim=hidden_dim[1], out_dim=hidden_dim[2],
                                          activation=T.tanh, layer_id='h2')
 
-        self.hidden_layer3 = HiddenLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[1], out_dim=hidden_dim[2],
-                                         activation=T.tanh, layer_id='h3')
-
         # final layer (softmax)
-        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer3.output, in_dim=hidden_dim[2], out_dim=n_classes,
-                                          layer_id='s1')
+        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[2], out_dim=n_classes,
+                                          layer_id='s0')
 
         # Regularization
-        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.hidden_layer2.weights).sum() +\
-                  abs(self.hidden_layer3.weights).sum() + abs(self.softmax_layer.weights).sum()
-        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + abs(self.hidden_layer2.weights ** 2).sum() +\
-                     (self.hidden_layer3.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
+        self.L1 = abs(self.hidden_layer0.weights).sum() + abs(self.hidden_layer1.weights).sum() + \
+                  abs(self.hidden_layer2.weights).sum() + abs(self.softmax_layer.weights).sum()
+        self.L2_sq = (self.hidden_layer0.weights ** 2).sum() + abs(self.hidden_layer1.weights ** 2).sum() + \
+                     (self.hidden_layer2.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
 
         # output, errors, and likelihood
         self.y_predict = self.softmax_layer.y_predict
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.errors = self.softmax_layer.errors
         self.output = self.softmax_layer.output
-        self.params = self.hidden_layer.params + self.hidden_layer2.params + self.hidden_layer3.params + \
+        self.params = self.hidden_layer0.params + self.hidden_layer1.params + self.hidden_layer2.params + \
                       self.softmax_layer.params
         self.input = x
         self.type = "fourLayer"
@@ -195,52 +209,57 @@ class FourLayerNetwork(Model):
 
 class FourLayerReLUNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
+        assert(len(hidden_dim) == 3)
         super(FourLayerReLUNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
 
+        self.input = x
+
         # first layer (hidden)
-        self.hidden_layer = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=ReLU, layer_id='h1')
+        self.hidden_layer0 = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=ReLU, layer_id='h0')
 
         # second layer
-        self.hidden_layer2 = HiddenLayer(x=self.hidden_layer.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
-                                         activation=ReLU, layer_id='h2')
+        self.hidden_layer1 = HiddenLayer(x=self.hidden_layer0.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
+                                         activation=ReLU, layer_id='h1')
 
-        self.hidden_layer3 = HiddenLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[1], out_dim=hidden_dim[2],
-                                         activation=T.tanh, layer_id='h3')
+        self.hidden_layer2 = HiddenLayer(x=self.hidden_layer1.output, in_dim=hidden_dim[1], out_dim=hidden_dim[2],
+                                         activation=T.tanh, layer_id='h2')
 
         # final layer (softmax)
-        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer3.output, in_dim=hidden_dim[2], out_dim=n_classes,
-                                          layer_id='s1')
+        self.softmax_layer = SoftmaxLayer(x=self.hidden_layer2.output, in_dim=hidden_dim[2], out_dim=n_classes,
+                                          layer_id='s0')
 
         # Regularization
         # Regularization
-        self.L1 = abs(self.hidden_layer.weights).sum() + abs(self.hidden_layer2.weights).sum() +\
-                  abs(self.hidden_layer3.weights).sum() + abs(self.softmax_layer.weights).sum()
-        self.L2_sq = (self.hidden_layer.weights ** 2).sum() + abs(self.hidden_layer2.weights ** 2).sum() +\
-                     (self.hidden_layer3.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
+        self.L1 = abs(self.hidden_layer0.weights).sum() + abs(self.hidden_layer1.weights).sum() + \
+                  abs(self.hidden_layer2.weights).sum() + abs(self.softmax_layer.weights).sum()
+        self.L2_sq = (self.hidden_layer0.weights ** 2).sum() + abs(self.hidden_layer1.weights ** 2).sum() + \
+                     (self.hidden_layer2.weights ** 2).sum() + (self.softmax_layer.weights ** 2).sum()
 
         # output, errors, and likelihood
         self.y_predict = self.softmax_layer.y_predict
         self.negative_log_likelihood = self.softmax_layer.negative_log_likelihood
         self.errors = self.softmax_layer.errors
         self.output = self.softmax_layer.output
-        self.params = self.hidden_layer.params + self.hidden_layer2.params + self.hidden_layer3.params + \
+        self.params = self.hidden_layer0.params + self.hidden_layer1.params + self.hidden_layer2.params + \
                       self.softmax_layer.params
-        self.input = x
+
         self.type = "ReLUfourLayer"
 
 
 class ConvolutionalNetwork3(Model):
-    def __init__(self, x, in_dim, hidden_dim, n_classes, batch_size, n_filters, data_shape, filter_shape, poolsize):
+    def __init__(self, x, in_dim, hidden_dim, n_classes,
+                 batch_size, n_filters, n_channels, data_shape, filter_shape, poolsize):
         super(ConvolutionalNetwork3, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
 
-        input_shape = (batch_size, 1, data_shape[0], data_shape[1])
+        # image shape is a 4D tensor, or a stack of data vectors, with dimensions
+        # (batch size, # channels, width, height)
+        input_shape = (batch_size, n_channels[0], data_shape[0], data_shape[1])
         layer0_input = x.reshape(input_shape)
 
         self.conv_layer = ConvPoolLayer(
             x=layer0_input,
-            #image_shape=input_shape,
-            image_shape=None,
-            filter_shape=(n_filters[0], 1, filter_shape[0], filter_shape[1]),
+            image_shape=input_shape,
+            filter_shape=(n_filters[0], n_channels[0], filter_shape[0], filter_shape[1]),
             poolsize=poolsize,
             layer_id="c1"
         )

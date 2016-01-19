@@ -29,9 +29,9 @@ j = {
     "sites": []
 }
 for m in [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]:
-    m = [m]
+    m_list = [m]
     d = dict()
-    d['motif_start_position'] = [m, m, m]
+    d['motif_start_position'] = [m_list, m_list, m_list]
     d['title'] = str(m)
     j['sites'].append(d)
 cPickle.dump(j, open("./configs/indivCytosineZymo.pkl", 'w'))
@@ -43,9 +43,9 @@ j = {
     "sites": []
 }
 for m in [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]:
-    m = [m]
+    m_list = [m]
     d = dict()
-    d['motif_start_position'] = [m, m, m]
+    d['motif_start_position'] = [m_list, m_list, m_list]
     d['title'] = str(m)
     j['sites'].append(d)
 cPickle.dump(j, open("./configs/indivCytosineZymo_4L.pkl", 'w'))
@@ -55,8 +55,9 @@ j = {
     "hidden_dim": 100,
     "model_type": "ConvNet3",
     "extra_args": {
-        "batch_size": 10,
+        "batch_size": 5,
         "n_filters": [10],
+        "n_channels": [1],
         "data_shape": [3, 6],
         "filter_shape": [1, 3],
         "poolsize": (2, 2),

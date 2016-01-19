@@ -17,7 +17,7 @@ class skLearnDigitTest(unittest.TestCase):
     def checkModel(self, test_name, model_type, hidden_dim, verbose, epochs, batch_size=10, extra_args=None):
         net, results = mini_batch_sgd(motif=test_name,
                                       train_data=self.tr, labels=self.tr_l,
-                                      xTrain_data=self.xtr, xTrain_labels=self.xtr_l,
+                                      xTrain_data=self.xtr, xTrain_targets=self.xtr_l,
                                       learning_rate=0.001, L1_reg=0.0, L2_reg=0.0, epochs=epochs,
                                       batch_size=batch_size, hidden_dim=hidden_dim, model_type=model_type,
                                       model_file=None, trained_model_dir=None, verbose=verbose, extra_args=extra_args)
@@ -25,7 +25,7 @@ class skLearnDigitTest(unittest.TestCase):
         self.assertTrue(results['xtrain_accuracies'][1] < results['xtrain_accuracies'][-1])
 
     def test_twoLayerNeuralNetwork(self):
-        self.checkModel(test_name="twoLayerTest", model_type="twoLayer", hidden_dim=10, verbose=False, epochs=1000)
+        self.checkModel(test_name="twoLayerTest", model_type="twoLayer", hidden_dim=[10], verbose=False, epochs=1000)
 
     def test_threeLayerNeuralNetwork(self):
         self.checkModel(test_name="threeLayerTest", model_type="threeLayer", hidden_dim=[10, 10], verbose=False,
@@ -41,20 +41,21 @@ class skLearnDigitTest(unittest.TestCase):
 
     def test_ConvNet(self):
         conv_args = {
-            "batch_size": 10,
-            "n_filters": [10],
-            "data_shape": [16, 4],    # (8-3+1, 8-3+1) = (6, 6)
-            "filter_shape": [2, 1],  # (6/2, 6/2) = (3, 3)
+            "batch_size": 50,
+            "n_filters": [5],
+            "n_channels": [1],
+            "data_shape": [8, 8],    # (8-3+1, 8-3+1) = (6, 6)
+            "filter_shape": [3, 3],  # (6/2, 6/2) = (3, 3)
             "poolsize": (2, 2)       # output is (batch_size, n_nkerns[0], 3, 3)
         }
-        self.checkModel(test_name="ConvNetTest", model_type="ConvNet3", hidden_dim=10, verbose=False, epochs=1000,
+        self.checkModel(test_name="ConvNetTest", model_type="ConvNet3", hidden_dim=10, verbose=True, epochs=1000,
                         extra_args=conv_args, batch_size=conv_args['batch_size'])
 
     def test_scrambledLabels(self):
         np.random.shuffle(self.xtr)
         net, results = mini_batch_sgd(motif="scrambled",
                                       train_data=self.tr, labels=self.tr_l,
-                                      xTrain_data=self.xtr, xTrain_labels=self.xtr_l,
+                                      xTrain_data=self.xtr, xTrain_targets=self.xtr_l,
                                       learning_rate=0.001, L1_reg=0.0, L2_reg=0.0, epochs=1000, batch_size=10,
                                       hidden_dim=[10, 10], model_type="threeLayer", model_file=None,
                                       trained_model_dir=None,
@@ -65,12 +66,15 @@ class skLearnDigitTest(unittest.TestCase):
     def test_annealingLearningRate(self):
         net, results = mini_batch_sgd_with_annealing(motif="annealing",
                                                      train_data=self.tr, labels=self.tr_l,
-                                                     xTrain_data=self.xtr, xTrain_labels=self.xtr_l,
+                                                     xTrain_data=self.xtr, xTrain_targets=self.xtr_l,
                                                      learning_rate=0.001, L1_reg=0.0, L2_reg=0.0, epochs=100,
                                                      batch_size=10,hidden_dim=[10, 10], model_type="threeLayer",
                                                      model_file=None, trained_model_dir=None, verbose=False)
         self.assertTrue(results['batch_costs'][1] > results['batch_costs'][-1])
         self.assertTrue(results['xtrain_accuracies'][1] < results['xtrain_accuracies'][-1])
+
+# TODO illegal network tests
+# TODO dump/load tests
 # TODO MNIST DATASET
 
 
@@ -83,7 +87,7 @@ def main():
     testSuite.addTest(skLearnDigitTest('test_scrambledLabels'))
     testSuite.addTest(skLearnDigitTest('test_annealingLearningRate'))
 
-    testRunner = unittest.TextTestRunner()
+    testRunner = unittest.TextTestRunner(verbosity=2)
     testRunner.run(testSuite)
 
 

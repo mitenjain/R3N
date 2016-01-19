@@ -74,7 +74,7 @@ cPickle.dump(j, open("./configs/indivCytosineZymo_conv.pkl", 'w'))
 ###############################################################################
 j = {
     "experiment_name": "indvidual null motif classification",
-    "hidden_dim": [100, 100],
+    "hidden_dim": [50, 10],
     "model_type": "ReLUthreeLayer",
     "sites": []
 }

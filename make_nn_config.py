@@ -104,7 +104,20 @@ for m in [[747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]]:
     d['motif_start_position'] = [m, m, m]
     d['title'] = "all_zymo_cytosine"
     j['sites'].append(d)
-cPickle.dump(j, open("./configs/all_zymo_cytosine.pkl", 'w'))
+cPickle.dump(j, open("./configs/all_zymo_cytosine_conv.pkl", 'w'))
+###############################################################################
+j = {
+    "experiment_name": "all cytosine motifs classification",
+    "hidden_dim": [100, 100],
+    "model_type": "ReLUthreeLayer",
+    "sites": []
+}
+for m in [[747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]]:
+    d = dict()
+    d['motif_start_position'] = [m, m, m]
+    d['title'] = "all_zymo_motifs"
+    j['sites'].append(d)
+cPickle.dump(j, open("./configs/all_zymo_motifs.pkl", 'w'))
 ###############################################################################
 j = {
     "experiment_name": "all null motifs classification",

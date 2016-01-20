@@ -140,6 +140,7 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
         # get the dataFrame of all features for all motif positions for this file
         motif_table = cull_motif_features4(motif=motif_starts, tsv=f, feature_set=feature_set,
                                            strand=strand, kmer_length=kmer_length)
+
         if motif_table is False:
             continue
         for motif_start in motif_starts:

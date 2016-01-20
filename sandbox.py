@@ -62,7 +62,4 @@ tr, xtr, ts = collect_data_vectors2(events_per_pos=1,
                                     max_samples=10,
                                     feature_set=dst)
 
-print "training", tr[0], "\n"
-print "cross-training", xtr[0], "\n"
-print "testing", ts[0], "\n"
-
+print tr

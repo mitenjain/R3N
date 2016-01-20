@@ -219,7 +219,7 @@ class FourLayerReLUNetwork(Model):
 
         # second layer
         self.hidden_layer1 = HiddenLayer(x=self.hidden_layer0.output, in_dim=hidden_dim[0], out_dim=hidden_dim[1],
-                                         activation=ReLU, layer_id='h1')
+                                         activation=T.tanh, layer_id='h1')
 
         self.hidden_layer2 = HiddenLayer(x=self.hidden_layer1.output, in_dim=hidden_dim[1], out_dim=hidden_dim[2],
                                          activation=T.tanh, layer_id='h2')

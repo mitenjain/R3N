@@ -105,7 +105,6 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
                           max_samples,
                           feature_set=None, kmer_length=6):
     assert(portion < 1.0 and max_samples >= 1)
-
     # collect the files
     tsvs = [x for x in glob.glob(files) if os.stat(x).st_size != 0]
     shuffle(tsvs)
@@ -222,6 +221,22 @@ def get_network(x, in_dim, n_classes, hidden_dim, model_type, extra_args=None):
     else:
         print("Invalid model type", file=sys.stderr)
         return False
+
+
+def stack_and_level_datasets3(data_1, data_2, data_3, level):
+    return np.vstack((data_1[:level], data_2[:level], data_3[:level]))
+
+
+def append_and_level_labels3(labels_1, labels_2, labels_3, level):
+    return np.append(labels_1[:level], np.append(labels_2[:level], labels_3[:level]))
+
+
+def stack_and_level_datasets2(data_1, data_2, level):
+    return np.vstack((data_1[:level], data_2[:level]))
+
+
+def append_and_level_labels2(labels_1, labels_2, level):
+    return np.append(labels_1[:level], labels_2[:level])
 
 
 def shared_dataset(data_x, data_y, borrow=True):

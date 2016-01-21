@@ -8,11 +8,13 @@ from optimization import mini_batch_sgd, mini_batch_sgd_with_annealing
 
 class skLearnDigitTest(unittest.TestCase):
     def setUp(self):
-        tr_data, ts_data = load_digit_dataset(0.7)
+        tr_data, xtr_data, ts_data = load_digit_dataset(0.7)
         self.tr = np.array([x[0] for x in tr_data])
         self.tr_l = [x[1] for x in tr_data]
-        self.xtr = np.array([x[0] for x in ts_data])
-        self.xtr_l = [x[1] for x in ts_data]
+        self.xtr = np.array([x[0] for x in xtr_data])
+        self.xtr_l = [x[1] for x in xtr_data]
+        self.ts = np.array([x[0] for x in ts_data])
+        self.ts_l = [x[1] for x in ts_data]
 
     def checkModel(self, test_name, model_type, hidden_dim, verbose, epochs, batch_size=10, extra_args=None):
         net, results = mini_batch_sgd(motif=test_name,
@@ -74,7 +76,7 @@ class skLearnDigitTest(unittest.TestCase):
         self.assertTrue(results['xtrain_accuracies'][1] < results['xtrain_accuracies'][-1])
 
 # TODO illegal network tests
-# TODO dump/load tests
+# TODO dump/load/eval tests
 # TODO MNIST DATASET
 
 

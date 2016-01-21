@@ -3,6 +3,7 @@
 import cPickle
 import os
 import numpy as np
+from random import sample
 
 
 class TargetRegions(object):
@@ -21,6 +22,21 @@ class TargetRegions(object):
         if not already_sorted:
             self.region_array = np.sort(self.region_array, axis=1)
 
+###############################################################################
+j = {
+    "experiment_name": "two motif test",
+    "hidden_dim": [50, 10],
+    "model_type": "ReLUthreeLayer",
+    "sites": []
+}
+motifs = sample([747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874], 2)
+for m in motifs:
+    m_list = [m]
+    d = dict()
+    d['motif_start_position'] = [m_list, m_list, m_list]
+    d['title'] = str(m)
+    j['sites'].append(d)
+cPickle.dump(j, open("./configs/motif_test.pkl", 'w'))
 ###############################################################################
 j = {
     "experiment_name": "individual cytosine motif classification",
@@ -52,10 +68,10 @@ cPickle.dump(j, open("./configs/indivCytosineZymo_4L.pkl", 'w'))
 ###############################################################################
 j = {
     "experiment_name": "individual cytosine motif classification ConvNet",
-    "hidden_dim": 100,
+    "hidden_dim": 10,
     "model_type": "ConvNet3",
     "extra_args": {
-        "batch_size": 5,
+        "batch_size": 2,
         "n_filters": [10],
         "n_channels": [1],
         "data_shape": [3, 6],
@@ -88,10 +104,10 @@ cPickle.dump(j, open("./configs/indivNullZymo.pkl", 'w'))
 ###############################################################################
 j = {
     "experiment_name": "All cytosine motifs classification",
-    "hidden_dim": 100,
+    "hidden_dim": 10,
     "model_type": "ConvNet3",
     "extra_args": {
-        "batch_size": 10,
+        "batch_size": 2,
         "n_filters": [10],
         "data_shape": [3, 6],
         "filter_shape": [1, 3],
@@ -174,7 +190,7 @@ neg_int_A_list = [x[0] for x in ecoli_neg_intersect_A.region_array]
 
 j = {
     "experiment_name": "ecoli CCAGG - intersect",
-    "hidden_dim": [50, 10],
+    "hidden_dim": [100, 100],
     "model_type": "ReLUthreeLayer",
     "sites": []
 }

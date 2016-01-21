@@ -22,14 +22,12 @@ def load_digit_dataset(split):
     data = sklearn.datasets.load_digits()
     X = data.data
     y = data.target
-    whole_dataset = zip(X, y)
-    shuffle(whole_dataset)
+    dataset = zip(X, y)
+    shuffle(dataset)
     split_point = int(len(X) * split)
+    xtrain_split = int(split_point + 0.5 * (1 - split) * len(X))
 
-    train_dataset = whole_dataset[:split_point]
-    test_dataset = whole_dataset[split_point:]
-
-    return train_dataset, test_dataset
+    return dataset[:split_point], dataset[split_point:xtrain_split], dataset[xtrain_split:]
 
 
 def generate_2_class_moon_data(size=300, noise=0.1):

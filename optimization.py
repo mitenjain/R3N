@@ -74,7 +74,6 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_targets,
         net.load(model_file)
 
     # do the actual training
-    best_xtrain_loss = np.inf
     batch_costs = [np.inf]
     add_to_batch_costs = batch_costs.append
     xtrain_accuracies = []
@@ -82,6 +81,9 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_targets,
     train_accuracies = []
     add_to_train_acc = train_accuracies.append
     xtrain_costs_bin = []
+
+    best_xtrain_accuracy = -np.inf
+    best_model = ''
 
     check_frequency = int(epochs / 10)
 
@@ -95,8 +97,7 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_targets,
             train_errors = [train_error_fcn(_) for _ in xrange(n_train_batches)]
             avg_training_errors = np.mean(train_errors)
             avg_train_accuracy = 100 * (1 - avg_training_errors)
-
-            # collect stuff for plotting
+            # collect for tracking progress
             add_to_xtrain_acc(avg_xtrain_accuracy)
             add_to_train_acc(avg_train_accuracy)
             xtrain_costs_bin += xtrain_errors
@@ -105,11 +106,15 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_targets,
                 print("{0}: epoch {1}, batch cost {2}, train accuracy {3}, cross-train accuracy {4}"
                       .format(motif, epoch, batch_costs[-1], avg_train_accuracy, avg_xtrain_accuracy), file=sys.stderr)
 
-            # if we're getting better, save the model
-            if avg_xtrain_errors < best_xtrain_loss and trained_model_dir is not None:
+            # if we're getting better, save the model, the 'oldest' model should be the one with the highest
+            # cross-train accuracy
+            if avg_xtrain_accuracy >= best_xtrain_accuracy and trained_model_dir is not None:
                 if not os.path.exists(trained_model_dir):
                     os.makedirs(trained_model_dir)
-                net.write("{0}model{1}.pkl".format(trained_model_dir, epoch))
+                # update the best accuracy and best model
+                best_xtrain_accuracy = avg_xtrain_accuracy
+                best_model = "{0}model{1}.pkl".format(trained_model_dir, epoch)
+                net.write(best_model)
 
         for i in xrange(n_train_batches):
             batch_avg_cost = train_fcn(i)
@@ -124,7 +129,8 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_targets,
         "batch_costs": batch_costs,
         "xtrain_accuracies": xtrain_accuracies,
         "train_accuracies": train_accuracies,
-        "xtrain_errors": xtrain_costs_bin
+        "xtrain_errors": xtrain_costs_bin,
+        "best_model": best_model
     }
     if trained_model_dir is not None:
         with open("{}summary_stats.pkl".format(trained_model_dir), 'w') as f:
@@ -200,7 +206,6 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
         net.load(model_file)
 
     # do the actual training
-    best_xtrain_loss = np.inf
     batch_costs = [np.inf]
     add_to_batch_costs = batch_costs.append
     xtrain_accuracies = []
@@ -209,7 +214,10 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
     add_to_train_acc = train_accuracies.append
     xtrain_costs_bin = []
     prev_xtrain_cost = 1e-10
-    check_frequency = epochs / 10
+
+    best_xtrain_accuracy = -np.inf
+    best_model = ''
+    check_frequency = int(epochs / 10)
 
     for epoch in xrange(0, epochs):
         # evaluation of training progress and summary stat collection
@@ -222,7 +230,7 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
             train_errors = [train_error_fcn(_) for _ in xrange(n_train_batches)]
             avg_training_errors = np.mean(train_errors)
             avg_train_accuracy = 100 * (1 - avg_training_errors)
-            # collect stuff for plotting
+            # collect for tracking progress
             add_to_xtrain_acc(avg_xtrain_accuracy)
             add_to_train_acc(avg_train_accuracy)
             xtrain_costs_bin += xtrain_errors
@@ -231,11 +239,15 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
                 print("{0}: epoch {1}, batch cost {2}, train accuracy {3}, cross-train accuracy {4}"
                       .format(motif, epoch, batch_costs[-1], avg_train_accuracy, avg_xtrain_accuracy), file=sys.stderr)
 
-            # if we're getting better, save the model
-            if avg_xtrain_errors < best_xtrain_loss and trained_model_dir is not None:
+            # if we're getting better, save the model, the 'oldest' model should be the one with the highest
+            # cross-train accuracy
+            if avg_xtrain_accuracy >= best_xtrain_accuracy and trained_model_dir is not None:
                 if not os.path.exists(trained_model_dir):
                     os.makedirs(trained_model_dir)
-                net.write("{0}model{1}.pkl".format(trained_model_dir, epoch))
+                # update the best accuracy and best model
+                best_xtrain_accuracy = avg_xtrain_accuracy
+                best_model = "{0}model{1}.pkl".format(trained_model_dir, epoch)
+                net.write(best_model)
 
         for i in xrange(n_train_batches):
             batch_avg_cost = train_fcn(i)
@@ -248,7 +260,6 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
             dynamic_learning_rate *= 0.9
 
         if mean_xtrain_cost > prev_xtrain_cost:
-            #print("GOT WORSE")
             dynamic_learning_rate *= 1.05
         prev_xtrain_cost = mean_xtrain_cost
 
@@ -257,7 +268,8 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
         "batch_costs": batch_costs,
         "xtrain_accuracies": xtrain_accuracies,
         "train_accuracies": train_accuracies,
-        "xtrain_errors": xtrain_costs_bin
+        "xtrain_errors": xtrain_costs_bin,
+        "best_model": best_model
     }
     if trained_model_dir is not None:
         with open("{}summary_stats.pkl".format(trained_model_dir), 'w') as f:

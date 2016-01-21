@@ -10,30 +10,49 @@ import sys
 import theano
 import theano.tensor as T
 import numpy as np
-from utils import collect_data_vectors2, shuffle_and_maintain_labels, preprocess_data, shared_dataset
-from optimization import mini_batch_sgd, mini_batch_sgd_with_annealing
+from utils import collect_data_vectors2, shuffle_and_maintain_labels, preprocess_data, chain, get_network, \
+    stack_and_level_datasets2, stack_and_level_datasets3, append_and_level_labels2, append_and_level_labels3
+from optimization import mini_batch_sgd, mini_batch_sgd_with_annealing, cPickle
 
 
 def predict(test_data, true_labels, batch_size, model, model_file=None):
     if model_file is not None:
-        model.load(model_file)
+        print("loading model from {}".format(model_file), end='\n', file=sys.stderr)
+        model.load_from_file(file_path=model_file, careful=True)
 
     n_test_batches = test_data.shape[0] / batch_size
 
     y = T.ivector('y')
 
-    #predict_fcn = theano.function(inputs=[model.input],
-    #                              outputs=model.y_predict,
-    #                              )
+    prob_fcn = theano.function(inputs=[model.input],
+                               outputs=model.output,
+                               )
+
     error_fcn = theano.function(inputs=[model.input, y],
                                 outputs=model.errors(y),
                                 )
-
     errors = [error_fcn(test_data[x * batch_size: (x + 1) * batch_size],
                         true_labels[x * batch_size: (x + 1) * batch_size]
                         ) for x in xrange(n_test_batches)]
+    probs = [prob_fcn(test_data[x * batch_size: (x + 1) * batch_size])
+             for x in xrange(n_test_batches)]
+    probs = list(chain(*probs))
+    return errors, probs
 
-    return errors
+
+def evaluate_network(test_data, targets, model_file, model_type, batch_size, extra_args=None):
+    # load the model file
+    model = cPickle.load(open(model_file, 'r'))
+    n_train_samples, data_dim = test_data.shape
+    n_classes = len(set(targets))
+    if data_dim != model['in_dim'] or n_classes != model['n_classes']:
+        print("This data is not compatible with this network, exiting", file=sys.stderr)
+        return False
+    net = get_network(x=test_data, in_dim=model['in_dim'], n_classes=model['n_classes'], model_type=model_type,
+                      hidden_dim=model['hidden_dim'], extra_args=extra_args)
+    net.load_from_object(model=model, careful=True)
+    errors, probs = predict(test_data=test_data, true_labels=targets, batch_size=batch_size, model=net, model_file=None)
+    return errors, probs
 
 
 def classify_with_network3(
@@ -46,7 +65,7 @@ def classify_with_network3(
         # model params
         learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None, extra_args=None,
         # output params
-        out_path="./"):
+        out_path="./", evaluate=False):
 
     assert(len(motif_start_positions) >= 3)
 
@@ -88,41 +107,49 @@ def classify_with_network3(
         hmc_xtr, hmc_xtr_targets = list_of_datasets[2][1][0], list_of_datasets[2][1][1]
         hmc_test, hmc_test_targets = list_of_datasets[2][2][0], list_of_datasets[2][2][1]
 
-        nb_c_train, nb_c_xtr = len(c_train), len(c_xtr)
-        nb_mc_train, nb_mc_xtr = len(mc_train), len(mc_xtr)
-        nb_hmc_train, nb_hmc_xtr = len(hmc_train), len(hmc_xtr)
+        nb_c_train, nb_c_xtr, nb_c_test = len(c_train), len(c_xtr), len(c_test)
+        nb_mc_train, nb_mc_xtr, nb_mc_test = len(mc_train), len(mc_xtr), len(mc_test)
+        nb_hmc_train, nb_hmc_xtr, nb_hmc_test = len(hmc_train), len(hmc_xtr), len(hmc_test)
 
         assert(nb_c_train > 0 and nb_mc_train > 0 and nb_hmc_train > 0), "got zero training vectors"
 
         # level training events so that the model gets equal exposure
         tr_level = np.min([nb_c_train, nb_mc_train, nb_hmc_train])
         xtr_level = np.min([nb_c_xtr, nb_mc_xtr, nb_hmc_xtr])
+        test_level = np.min([nb_c_test, nb_mc_test, nb_hmc_test])
 
         # log how many vectors we got
         print("{motif}: got {C} C, {mC} mC, and {hmC} hmC, training vectors, leveled to {level}"
               .format(motif=title, C=nb_c_train, mC=nb_mc_train, hmC=nb_hmc_train, level=tr_level), file=sys.stderr)
         print("{motif}: got {xC} C, {xmC} mC, and {xhmC} hmC, cross-training vectors, leveled to {xlevel}"
               .format(motif=title, xC=nb_c_xtr, xmC=nb_mc_xtr, xhmC=nb_hmc_xtr, xlevel=xtr_level), file=sys.stderr)
-        print("{motif}: got {xC} C, {xmC} mC, and {xhmC} hmC, test vectors"
-              .format(motif=title, xC=len(c_test), xmC=len(mc_test), xhmC=len(hmc_test)), file=sys.stderr)
+        print("{motif}: got {xC} C, {xmC} mC, and {xhmC} hmC, test vectors, leveled to {tstLevel}"
+              .format(motif=title, xC=len(c_test), xmC=len(mc_test), xhmC=len(hmc_test),
+                      tstLevel=test_level), file=sys.stderr)
 
         # stack the data into one object
         # training data
-        training_data = np.vstack((c_train[:tr_level], mc_train[:tr_level], hmc_train[:tr_level]))
-        training_labels = np.append(c_tr_labels[:tr_level], np.append(mc_tr_labels[:tr_level],
-                                                                      hmc_tr_labels[:tr_level]))
+        training_data = stack_and_level_datasets3(c_train, mc_train, hmc_train, tr_level)
+        training_labels = append_and_level_labels3(c_tr_labels, mc_tr_labels, hmc_tr_labels, tr_level)
+
         # cross training
-        xtrain_data = np.vstack((c_xtr[:xtr_level], mc_xtr[:xtr_level], hmc_xtr[:xtr_level]))
-        xtrain_targets = np.append(c_xtr_targets[:xtr_level], np.append(mc_xtr_targets[:xtr_level],
-                                                                        hmc_xtr_targets[:xtr_level]))
+        xtrain_data = stack_and_level_datasets3(c_xtr, mc_xtr, hmc_xtr, xtr_level)
+        xtrain_targets = append_and_level_labels3(c_xtr_targets, mc_xtr_targets, hmc_xtr_targets, xtr_level)
+
         # test
-        test_data = np.vstack((c_test, mc_test, hmc_test))
-        test_targets = np.append(c_test_targets, np.append(mc_test_targets, hmc_test_targets))
+        test_data = stack_and_level_datasets3(c_test, mc_test, hmc_test, test_level)
+        test_targets = append_and_level_labels3(c_test_targets, mc_test_targets, hmc_test_targets, test_level)
 
         prc_train, prc_xtrain, prc_test = preprocess_data(training_vectors=training_data,
                                                           xtrain_vectors=xtrain_data,
                                                           test_vectors=test_data,
                                                           preprocess=preprocess)
+
+        if evaluate is True:
+            all_test_data = np.vstack((xtrain_data, test_data))
+            all_test_targets = np.append(xtrain_targets, test_targets)
+            errors, probs = evaluate_network(all_test_data, all_test_targets, model_file, model_type, batch_size, extra_args)
+            return
 
         # shuffle data
         X, y = shuffle_and_maintain_labels(prc_train, training_labels)
@@ -152,12 +179,16 @@ def classify_with_network3(
         else:
             net, summary = mini_batch_sgd(**training_routine_args)
 
-        errors = predict(prc_test, test_targets, training_routine_args['batch_size'], net)
-        errors = np.mean(errors)
-        errors = 1 - errors
-        print("{0}: {1} test error.".format(title, errors))
+        errors, probs = predict(prc_test, test_targets, training_routine_args['batch_size'], net,
+                                model_file=summary['best_model'])
+        errors = 1 - np.mean(errors)
+
+        print("{0}: {1} test accuracy.".format(title, (errors * 100)))
         out_file.write("{}\n".format(errors))
         scores.append(errors)
+
+        with open("{}test_probs.pkl".format(trained_model_dir), 'w') as probs_file:
+            cPickle.dump(probs, probs_file)
 
     print(">{motif}\t{accuracy}".format(motif=title, accuracy=np.mean(scores), end="\n"), file=out_file)
 
@@ -175,8 +206,7 @@ def classify_with_network2(
         learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None, extra_args=None,
         # output params
         out_path="./"):
-    raise NotImplementedError
-
+    print("2 way classification")
     assert(len(motif_start_positions) >= 2)
 
     out_file = open(out_path + title + ".tsv", 'wa')
@@ -184,91 +214,120 @@ def classify_with_network2(
     # bin to hold accuracies for each iteration
     scores = []
 
+    collect_data_vectors_args = {
+        "events_per_pos": events_per_pos,
+        "portion": train_test_split,
+        "strand": strand,
+        "max_samples": max_samples,
+        "feature_set": feature_set,
+        "kmer_length": 6
+    }
+
     for i in xrange(iterations):
-        g1_train, g1_tr_labels, g1_xtr, g1_xtr_targets = \
-            collect_data_vectors2(events_per_pos=events_per_pos,
-                                  label=0,
-                                  portion=train_test_split,
-                                  files=group_1,
-                                  strand=strand,
-                                  motif_starts=motif_start_positions[0],
-                                  dataset_title=title+"_group1",
-                                  max_samples=max_samples,
-                                  feature_set=feature_set,
-                                  kmer_length=6
-                                  )
+        list_of_datasets = []  # [((g1, g1l), (xg1, xg1l), (tg1, tg1l)), ... ]
+        add_to_list = list_of_datasets.append
+        for n, group in enumerate((group_1, group_2)):
+            train_set, xtrain_set, test_set = collect_data_vectors2(label=n,
+                                                                    files=group,
+                                                                    motif_starts=motif_start_positions[n],
+                                                                    dataset_title=title + "_group{}".format(n),
+                                                                    **collect_data_vectors_args)
+            add_to_list((train_set, xtrain_set, test_set))
+        # unpack list
+        g1_train, g1_tr_labels = list_of_datasets[0][0][0], list_of_datasets[0][0][1]
+        g1_xtr, g1_xtr_targets = list_of_datasets[0][1][0], list_of_datasets[0][1][1]
+        g1_test, g1_test_targets = list_of_datasets[0][2][0], list_of_datasets[0][2][1]
 
-        g2_train, g2_tr_labels, g2_xtr, g2_xtr_targets = \
-            collect_data_vectors2(events_per_pos=events_per_pos,
-                                  label=1,
-                                  portion=train_test_split,
-                                  files=group_2,
-                                  strand=strand,
-                                  motif_starts=motif_start_positions[1],
-                                  dataset_title=title+"_group2",
-                                  max_samples=max_samples,
-                                  feature_set=feature_set,
-                                  kmer_length=6
-                                  )
+        g2_train, g2_tr_labels = list_of_datasets[1][0][0], list_of_datasets[1][0][1]
+        g2_xtr, g2_xtr_targets = list_of_datasets[1][1][0], list_of_datasets[1][1][1]
+        g2_test, g2_test_targets = list_of_datasets[1][2][0], list_of_datasets[1][2][1]
 
-        nb_g1_train, nb_g1_xtr = len(g1_train), len(g1_xtr)
-        nb_g2_train, nb_g2_xtr = len(g2_train), len(g2_xtr)
+        nb_g1_train, nb_g1_xtr, nb_g1_test = len(g1_train), len(g1_xtr), len(g1_test)
+        nb_g2_train, nb_g2_xtr, nb_g2_test = len(g2_train), len(g2_xtr), len(g2_test)
         assert(nb_g1_train > 0 and nb_g2_train > 0), "got {0} group 1 training and " \
                                                      "{1} group 2 training vectors".format(nb_g1_train, nb_g2_train)
 
         # level training and cross-training events so that the model gets equal exposure
         tr_level = np.min([nb_g1_train, nb_g2_train])
         xtr_level = np.min([nb_g1_xtr, nb_g2_xtr])
+        test_level = np.min([nb_g1_test, nb_g2_test])
         print("{motif}: got {g1} group 1 and {g2} group 2 training vectors, leveled to {level}"
               .format(motif=title, g1=nb_g1_train, g2=nb_g2_train, level=tr_level))
         print("{motif}: got {g1} group 1 and {g2} group 2 cross-training vectors, leveled to {level}"
               .format(motif=title, g1=nb_g1_xtr, g2=nb_g2_xtr, level=xtr_level))
+        print("{motif}: got {g1} group 1 and {g2} group 2 test vectors, leveled to {level}"
+              .format(motif=title, g1=nb_g1_test, g2=nb_g2_test, level=test_level))
 
-        g1_train = g1_train[:tr_level]
-        g1_tr_labels = g1_tr_labels[0][:tr_level]
+        #g1_train = g1_train[:tr_level]
+        #g1_tr_labels = g1_tr_labels[0][:tr_level]
 
-        g2_train = g2_train[:tr_level]
-        g2_tr_labels = g2_tr_labels[0][:tr_level]
+        #g2_train = g2_train[:tr_level]
+        #g2_tr_labels = g2_tr_labels[0][:tr_level]
 
-        g1_xtr = g1_xtr[:xtr_level]
-        g1_xtr_targets = g1_xtr_targets[:xtr_level]
+        #g1_xtr = g1_xtr[:xtr_level]
+        #g1_xtr_targets = g1_xtr_targets[:xtr_level]
 
-        g2_xtr = g2_xtr[:xtr_level]
-        g2_xtr_targets = g2_xtr_targets[:xtr_level]
+        #g2_xtr = g2_xtr[:xtr_level]
+        #g2_xtr_targets = g2_xtr_targets[:xtr_level]
 
         # stack the data into one object
-        training_data = np.vstack((g1_train, g2_train))
-        training_targets = np.append(g1_tr_labels, g2_tr_labels)
-        xtrain_data = np.vstack((g1_xtr, g2_xtr))
-        xtrain_targets = np.append(g1_xtr_targets, g2_xtr_targets)
+        #training_data = np.vstack((g1_train, g2_train))
+        #training_targets = np.append(g1_tr_labels, g2_tr_labels)
+        #xtrain_data = np.vstack((g1_xtr, g2_xtr))
+        #xtrain_targets = np.append(g1_xtr_targets, g2_xtr_targets)
 
-        prc_train, prc_xtrain = preprocess_data(training_vectors=training_data,
-                                                xtrain_vectors=xtrain_data,
-                                                preprocess=preprocess)
+        training_data = stack_and_level_datasets2(g1_train, g2_train, tr_level)
+        training_labels = append_and_level_labels2(g1_tr_labels, g2_tr_labels, tr_level)
 
-        X, y = shuffle_and_maintain_labels(prc_train, training_targets)
+        xtrain_data = stack_and_level_datasets2(g1_xtr, g2_xtr, xtr_level)
+        xtrain_targets = append_and_level_labels2(g1_xtr_targets, g2_xtr_targets, xtr_level)
+
+        test_data = stack_and_level_datasets2(g1_test, g2_test, test_level)
+        test_targets = append_and_level_labels2(g1_test_targets, g2_test_targets, test_level)
+
+        prc_train, prc_xtrain, prc_test = preprocess_data(training_vectors=training_data,
+                                                          xtrain_vectors=xtrain_data,
+                                                          test_vectors=test_data,
+                                                          preprocess=preprocess)
+
+        # evaluate
+
+        X, y = shuffle_and_maintain_labels(prc_train, training_labels)
 
         trained_model_dir = "{0}{1}_Models/".format(out_path, title)
 
-        if learning_algorithm == "annealing":
-            net, summary = mini_batch_sgd_with_annealing(motif=title, train_data=X, labels=y,
-                                                xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
-                                                learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
-                                                epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
-                                                model_type=model_type, model_file=model_file, extra_args=extra_args,
-                                                trained_model_dir=trained_model_dir)
-        else:
-            net, summary = mini_batch_sgd(motif=title, train_data=X, labels=y,
-                                 xTrain_data=xtrain_data, xTrain_labels=xtrain_targets,
-                                 learning_rate=learning_rate, L1_reg=L1_reg, L2_reg=L2_reg,
-                                 epochs=epochs, batch_size=batch_size, hidden_dim=hidden_dim,
-                                 model_type=model_type, model_file=model_file, extra_args=extra_args,
-                                 trained_model_dir=trained_model_dir)
+        training_routine_args = {
+            "motif": title,
+            "train_data": X,
+            "labels": y,
+            "xTrain_data": prc_xtrain,
+            "xTrain_targets": xtrain_targets,
+            "learning_rate": learning_rate,
+            "L1_reg": L1_reg,
+            "L2_reg": L2_reg,
+            "epochs": epochs,
+            "batch_size": batch_size,
+            "hidden_dim": hidden_dim,
+            "model_type": model_type,
+            "model_file": model_file,
+            "trained_model_dir": trained_model_dir,
+            "extra_args": extra_args
+        }
 
-        errors = predict(xtrain_data, xtrain_targets, net)
-        errors = 1 - errors
+        if learning_algorithm == "annealing":
+            net, summary = mini_batch_sgd_with_annealing(**training_routine_args)
+        else:
+            net, summary = mini_batch_sgd(**training_routine_args)
+
+        errors, probs = predict(prc_test, test_targets, training_routine_args['batch_size'], net,
+                                model_file=summary['best_model'])
+        errors = 1 - np.mean(errors)
+        print("{0}: {1} test accuracy.".format(title, (errors * 100)))
         out_file.write("{}\n".format(errors))
         scores.append(errors)
+
+        with open("{}test_probs.pkl".format(trained_model_dir), 'w') as probs_file:
+            cPickle.dump(probs, probs_file)
 
     print(">{motif}\t{accuracy}".format(motif=title, accuracy=np.mean(scores), end="\n"), file=out_file)
     return net

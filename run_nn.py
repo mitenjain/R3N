@@ -147,8 +147,8 @@ def main(args):
             "extra_args": extra_args,
             "out_path": args.out,
         }
-        #classify_with_network2(**nn_args)  # activate for debugging
-        work_queue.put(nn_args)
+        classify_with_network2(**nn_args)  # activate for debugging
+        #work_queue.put(nn_args)
 
     for w in xrange(workers):
         if args.group_3 is None:

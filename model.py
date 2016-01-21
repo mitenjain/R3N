@@ -21,7 +21,7 @@ def ReLU(x):
 class Model(object):
     """Base class for network models
     """
-    def __init__(self, x, in_dim, n_classes):
+    def __init__(self, x, in_dim, n_classes, hidden_dim):
         """x: input data
           in_dim: dimensionality of input data
           n_classes: number of classes within data
@@ -29,6 +29,7 @@ class Model(object):
         self.input = x
         self.in_dim = in_dim
         self.n_classes = n_classes
+        self.hidden_dim = hidden_dim
         self.params = None
         self.initialized = False
 
@@ -41,6 +42,7 @@ class Model(object):
             "model": self.__class__,
             "in_dim": self.in_dim,
             "n_classes": self.n_classes,
+            "hidden_dim": self.hidden_dim,
         }
         assert (self.params is not None)
         for param in self.params:
@@ -48,15 +50,21 @@ class Model(object):
             d[lb] = param.get_value()
         cPickle.dump(d, f)
 
-    def load(self, file_path, careful=False):
+    def load_from_file(self, file_path=None, model_obj=None, careful=False):
         """Load model
          file_path: string, file to and including model file
         """
-        f = open(file_path, 'r')
-        d = cPickle.load(f)
+        if file_path is not None:
+            f = open(file_path, 'r')
+            d = cPickle.load(f)
+        else:
+            assert(model_obj is not None), "need to provide file or dict with model params"
+            d=model_obj
+
         assert(self.in_dim == d['in_dim'])
         assert(self.n_classes == d['n_classes'])
         assert(self.__class__ == d['model'])
+        assert(self.hidden_dim == d['hidden_dim'])
 
         missing_params = 0
         for param in self.params:
@@ -69,11 +77,14 @@ class Model(object):
         if careful is True:
             print("got {} missing params".format(missing_params), file=sys.stderr)
 
+    def load_from_object(self, model, careful=False):
+        self.load_from_file(file_path=None, model_obj=model, careful=careful)
+
 
 class NeuralNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
         assert(len(hidden_dim) == 1)
-        super(NeuralNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        super(NeuralNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
 
         self.input = x
 
@@ -104,7 +115,7 @@ class ThreeLayerNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
         assert(len(hidden_dim) == 2)
         # Note: hidden dim is a list with the dimensions of the hidden layer
-        super(ThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        super(ThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
 
         self.input = x
 
@@ -139,7 +150,7 @@ class ReLUThreeLayerNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
         assert(len(hidden_dim) == 2)
         # Note: hidden dim is a list with the dimensions of the hidden layer
-        super(ReLUThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        super(ReLUThreeLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
 
         self.input = x
 
@@ -174,7 +185,7 @@ class ReLUThreeLayerNetwork(Model):
 class FourLayerNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
         assert(len(hidden_dim) == 3)
-        super(FourLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        super(FourLayerNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
 
         # first layer (hidden)
         self.hidden_layer0 = HiddenLayer(x=x, in_dim=in_dim, out_dim=hidden_dim[0], activation=T.tanh, layer_id='h0')
@@ -210,7 +221,7 @@ class FourLayerNetwork(Model):
 class FourLayerReLUNetwork(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes):
         assert(len(hidden_dim) == 3)
-        super(FourLayerReLUNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        super(FourLayerReLUNetwork, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
 
         self.input = x
 
@@ -249,7 +260,7 @@ class FourLayerReLUNetwork(Model):
 class ConvolutionalNetwork3(Model):
     def __init__(self, x, in_dim, hidden_dim, n_classes,
                  batch_size, n_filters, n_channels, data_shape, filter_shape, poolsize):
-        super(ConvolutionalNetwork3, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes)
+        super(ConvolutionalNetwork3, self).__init__(x=x, in_dim=in_dim, n_classes=n_classes, hidden_dim=hidden_dim)
 
         # image shape is a 4D tensor, or a stack of data vectors, with dimensions
         # (batch size, # channels, width, height)

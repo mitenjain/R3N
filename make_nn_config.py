@@ -190,8 +190,8 @@ neg_int_A_list = [x[0] for x in ecoli_neg_intersect_A.region_array]
 
 j = {
     "experiment_name": "ecoli CCAGG - intersect",
-    "hidden_dim": [100, 100],
-    "model_type": "ReLUthreeLayer",
+    "hidden_dim": [100, 100, 100],
+    "model_type": "fourLayer",
     "sites": []
 }
 d = dict()

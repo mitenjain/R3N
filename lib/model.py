@@ -60,7 +60,7 @@ class Model(object):
         else:
             assert(model_obj is not None), "need to provide file or dict with model params"
             d = model_obj
-        
+
         assert(self.in_dim == d['in_dim'])
         assert(self.n_classes == d['n_classes']), "Incorrect number of input classes, got {0} should be {1}".format(
             d['n_classes'], self.n_classes)

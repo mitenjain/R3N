@@ -6,7 +6,7 @@ Citations
 [3]https://github.com/mnielsen/neural-networks-and-deep-learning
 """
 from __future__ import print_function
-import sys
+import sys, os
 import theano
 import theano.tensor as T
 import numpy as np
@@ -71,8 +71,8 @@ def classify_with_network3(
     assert(len(motif_start_positions) >= 3)
     out_file = open(out_path + title + ".tsv", 'wa')
     if model_dir is not None:
-        print("looking for model in {}".format(model_dir))
-        model_file = find_model_path(model_dir, title)
+        print("looking for model in {}".format(os.path.abspath(model_dir)))
+        model_file = find_model_path(os.path.abspath(model_dir), title)
     else:
         model_file = None
     # bin to hold accuracies for each iteration
@@ -158,7 +158,7 @@ def classify_with_network3(
         # shuffle data
         X, y = shuffle_and_maintain_labels(prc_train, training_labels)
 
-        trained_model_dir = "{0}{1}_Models/".format(out_path, title)
+        trained_model_dir = "{0}/{1}_Models/".format(os.path.abspath(out_path), title)
 
         training_routine_args = {
             "motif": title,

@@ -62,7 +62,8 @@ class Model(object):
             d=model_obj
 
         assert(self.in_dim == d['in_dim'])
-        assert(self.n_classes == d['n_classes'])
+        assert(self.n_classes == d['n_classes']), "Incorrect number of input classes, got {0} should be {1}".format(
+            d['n_classes'], self.n_classes)
         assert(self.__class__ == d['model'])
         assert(self.hidden_dim == d['hidden_dim'])
 

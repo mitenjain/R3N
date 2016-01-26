@@ -241,12 +241,16 @@ def append_and_level_labels2(labels_1, labels_2, level):
 
 
 def find_model_path(model_directory, title):
-    p = "{modelDir}{title}_Models/summary_stats.pkl".format(modelDir=model_directory, title=title)
+    p = "{modelDir}/{title}_Models/summary_stats.pkl".format(modelDir=model_directory, title=title)
+    print("p={}".format(p))
     assert(os.path.exists(p)), "didn't find model files in this directory"
     summary = cPickle.load(open(p, 'r'))
     assert('best_model' in summary), "summary file didn't have the best_model file path"
-    print("found best_model at{}".format(summary['best_model']))
-    return summary['best_model']
+    model = summary['best_model'].split("/")[-1]  # disregard the file path
+    print("model: {}".format(model))
+    path_to_model = "{modelDir}/{title}_Models/{model}".format(modelDir=model_directory, model=model, title=title)
+    print("loading model from {}".format(path_to_model))
+    return path_to_model
 
 
 def shared_dataset(data_x, data_y, borrow=True):

@@ -70,7 +70,7 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_targets,
                                           y: train_set_y[batch_index * batch_size: (batch_index + 1) * batch_size]
                                       })
 
-    if model_file is not None:
+    if model_file is not None:  # TODO fix the path here
         net.load_from_file(file_path=model_file, careful=True)
 
     # do the actual training

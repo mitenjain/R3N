@@ -6,11 +6,11 @@ Citations
 [3]https://github.com/mnielsen/neural-networks-and-deep-learning
 """
 from __future__ import print_function
-import numpy as np
 import sys
+import cPickle
+import numpy as np
 from itertools import izip
 from layers import HiddenLayer, SoftmaxLayer, ConvPoolLayer
-import cPickle
 import theano.tensor as T
 
 
@@ -59,8 +59,8 @@ class Model(object):
             d = cPickle.load(f)
         else:
             assert(model_obj is not None), "need to provide file or dict with model params"
-            d=model_obj
-
+            d = model_obj
+        
         assert(self.in_dim == d['in_dim'])
         assert(self.n_classes == d['n_classes']), "Incorrect number of input classes, got {0} should be {1}".format(
             d['n_classes'], self.n_classes)

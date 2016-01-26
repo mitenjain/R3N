@@ -71,7 +71,7 @@ def mini_batch_sgd(motif, train_data, labels, xTrain_data, xTrain_targets,
                                       })
 
     if model_file is not None:
-        net.load(model_file)
+        net.load_from_file(file_path=model_file, careful=True)
 
     # do the actual training
     batch_costs = [np.inf]
@@ -203,7 +203,7 @@ def mini_batch_sgd_with_annealing(motif, train_data, labels, xTrain_data, xTrain
                                       })
 
     if model_file is not None:
-        net.load(model_file)
+        net.load_from_file(file_path=model_file, careful=True)
 
     # do the actual training
     batch_costs = [np.inf]

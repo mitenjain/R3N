@@ -3,7 +3,7 @@
 """
 import sys
 import cPickle
-from neural_network import classify_with_network3, classify_with_network2
+from lib.neural_network import classify_with_network3, classify_with_network2
 from argparse import ArgumentParser
 from multiprocessing import Process, current_process, Manager
 
@@ -23,6 +23,8 @@ def parse_args():
                         help="group_3 files")
     parser.add_argument('--config_file', '-c', action='store', type=str, dest='config',
                         required=True, help='config file (pickle)')
+    parser.add_argument('--model_dir', action='store', type=str, dest='model_file', required=False,
+                        default=None, help="directory with models")
     parser.add_argument('--strand', '-st', action='store', dest='strand', required=True,
                         type=str, help="which strand to use, options = {t, c, both}")
     parser.add_argument('-nb_files', '-nb', action='store', dest='nb_files', required=False,
@@ -144,11 +146,12 @@ def main(args):
             "L2_reg": args.L2,
             "hidden_dim": config['hidden_dim'],
             "model_type": config['model_type'],
+            "model_dir": args.model_file,
             "extra_args": extra_args,
             "out_path": args.out,
         }
-        classify_with_network2(**nn_args)  # activate for debugging
-        #work_queue.put(nn_args)
+        #classify_with_network2(**nn_args)  # activate for debugging
+        work_queue.put(nn_args)
 
     for w in xrange(workers):
         if args.group_3 is None:

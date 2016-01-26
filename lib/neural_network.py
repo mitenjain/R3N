@@ -11,7 +11,8 @@ import theano
 import theano.tensor as T
 import numpy as np
 from utils import collect_data_vectors2, shuffle_and_maintain_labels, preprocess_data, chain, get_network, \
-    stack_and_level_datasets2, stack_and_level_datasets3, append_and_level_labels2, append_and_level_labels3
+    stack_and_level_datasets2, stack_and_level_datasets3, append_and_level_labels2, append_and_level_labels3, \
+    find_model_path
 from optimization import mini_batch_sgd, mini_batch_sgd_with_annealing, cPickle
 
 
@@ -63,14 +64,17 @@ def classify_with_network3(
         # training params
         learning_algorithm, train_test_split, iterations, epochs, max_samples, batch_size,
         # model params
-        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None, extra_args=None,
+        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_dir=None, extra_args=None,
         # output params
-        out_path="./", evaluate=False):
-
+        out_path="./"):
+    # checks and file IO
     assert(len(motif_start_positions) >= 3)
-
     out_file = open(out_path + title + ".tsv", 'wa')
-
+    if model_dir is not None:
+        print("looking for model in {}".format(model_dir))
+        model_file = find_model_path(model_dir, title)
+    else:
+        model_file = None
     # bin to hold accuracies for each iteration
     scores = []
 
@@ -145,11 +149,11 @@ def classify_with_network3(
                                                           test_vectors=test_data,
                                                           preprocess=preprocess)
 
-        if evaluate is True:
-            all_test_data = np.vstack((xtrain_data, test_data))
-            all_test_targets = np.append(xtrain_targets, test_targets)
-            errors, probs = evaluate_network(all_test_data, all_test_targets, model_file, model_type, batch_size, extra_args)
-            return
+        #if evaluate is True:
+        #    all_test_data = np.vstack((xtrain_data, test_data))
+        #    all_test_targets = np.append(xtrain_targets, test_targets)
+        #    errors, probs = evaluate_network(all_test_data, all_test_targets, model_dir, model_type, batch_size, extra_args)
+        #    return
 
         # shuffle data
         X, y = shuffle_and_maintain_labels(prc_train, training_labels)
@@ -203,13 +207,17 @@ def classify_with_network2(
         # training params
         learning_algorithm, train_test_split, iterations, epochs, max_samples, batch_size,
         # model params
-        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_file=None, extra_args=None,
+        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_dir=None, extra_args=None,
         # output params
         out_path="./"):
     print("2 way classification")
     assert(len(motif_start_positions) >= 2)
-
     out_file = open(out_path + title + ".tsv", 'wa')
+    if model_dir is not None:
+        print("looking for model in {}".format(model_dir))
+        model_file = find_model_path(model_dir, title)
+    else:
+        model_file = None
 
     # bin to hold accuracies for each iteration
     scores = []
@@ -257,24 +265,6 @@ def classify_with_network2(
               .format(motif=title, g1=nb_g1_xtr, g2=nb_g2_xtr, level=xtr_level))
         print("{motif}: got {g1} group 1 and {g2} group 2 test vectors, leveled to {level}"
               .format(motif=title, g1=nb_g1_test, g2=nb_g2_test, level=test_level))
-
-        #g1_train = g1_train[:tr_level]
-        #g1_tr_labels = g1_tr_labels[0][:tr_level]
-
-        #g2_train = g2_train[:tr_level]
-        #g2_tr_labels = g2_tr_labels[0][:tr_level]
-
-        #g1_xtr = g1_xtr[:xtr_level]
-        #g1_xtr_targets = g1_xtr_targets[:xtr_level]
-
-        #g2_xtr = g2_xtr[:xtr_level]
-        #g2_xtr_targets = g2_xtr_targets[:xtr_level]
-
-        # stack the data into one object
-        #training_data = np.vstack((g1_train, g2_train))
-        #training_targets = np.append(g1_tr_labels, g2_tr_labels)
-        #xtrain_data = np.vstack((g1_xtr, g2_xtr))
-        #xtrain_targets = np.append(g1_xtr_targets, g2_xtr_targets)
 
         training_data = stack_and_level_datasets2(g1_train, g2_train, tr_level)
         training_labels = append_and_level_labels2(g1_tr_labels, g2_tr_labels, tr_level)

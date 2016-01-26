@@ -6,6 +6,7 @@ import os
 import theano
 import sys
 import glob
+import cPickle
 import pandas as pd
 import numpy as np
 import theano.tensor as T
@@ -237,6 +238,15 @@ def stack_and_level_datasets2(data_1, data_2, level):
 
 def append_and_level_labels2(labels_1, labels_2, level):
     return np.append(labels_1[:level], labels_2[:level])
+
+
+def find_model_path(model_directory, title):
+    p = "{modelDir}{title}_Models/summary_stats.pkl".format(modelDir=model_directory, title=title)
+    assert(os.path.exists(p)), "didn't find model files in this directory"
+    summary = cPickle.load(open(p, 'r'))
+    assert('best_model' in summary), "summary file didn't have the best_model file path"
+    print("found best_model at{}".format(summary['best_model']))
+    return summary['best_model']
 
 
 def shared_dataset(data_x, data_y, borrow=True):

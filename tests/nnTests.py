@@ -1,9 +1,10 @@
 #!/usr/bin/env python
-
+import sys
+sys.path.append("../")
 import unittest
 import numpy as np
 from toy_datasets import load_digit_dataset
-from optimization import mini_batch_sgd, mini_batch_sgd_with_annealing
+from lib.optimization import mini_batch_sgd, mini_batch_sgd_with_annealing
 
 
 class skLearnDigitTest(unittest.TestCase):
@@ -50,7 +51,7 @@ class skLearnDigitTest(unittest.TestCase):
             "filter_shape": [3, 3],  # (6/2, 6/2) = (3, 3)
             "poolsize": (2, 2)       # output is (batch_size, n_nkerns[0], 3, 3)
         }
-        self.checkModel(test_name="ConvNetTest", model_type="ConvNet3", hidden_dim=10, verbose=True, epochs=1000,
+        self.checkModel(test_name="ConvNetTest", model_type="ConvNet3", hidden_dim=10, verbose=False, epochs=1000,
                         extra_args=conv_args, batch_size=conv_args['batch_size'])
 
     def test_scrambledLabels(self):

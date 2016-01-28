@@ -29,7 +29,7 @@ j = {
     "model_type": "ReLUthreeLayer",
     "sites": []
 }
-motifs = sample([747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874], 2)
+motifs = sample([747, 354, 147, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874], 2)
 for m in motifs:
     m_list = [m]
     d = dict()
@@ -44,7 +44,7 @@ j = {
     "model_type": "ReLUthreeLayer",
     "sites": []
 }
-for m in [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]:
+for m in [747, 354, 147, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]:
     m_list = [m]
     d = dict()
     d['motif_start_position'] = [m_list, m_list, m_list]
@@ -58,7 +58,7 @@ j = {
     "model_type": "fourLayer",
     "sites": []
 }
-for m in [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]:
+for m in [747, 354, 147, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]:
     m_list = [m]
     d = dict()
     d['motif_start_position'] = [m_list, m_list, m_list]
@@ -80,7 +80,7 @@ j = {
     },
     "sites": []
 }
-for m in [747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]:
+for m in [747, 354, 147, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]:
     m = [m]
     d = dict()
     d['motif_start_position'] = [m, m, m]
@@ -94,7 +94,7 @@ j = {
     "model_type": "ReLUthreeLayer",
     "sites": []
 }
-for m in [11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]:
+for m in [62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]:
     m_list = [m]
     d = dict()
     d['motif_start_position'] = [m_list, m_list, m_list]
@@ -115,7 +115,7 @@ j = {
     },
     "sites": []
 }
-for m in [[747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]]:
+for m in [[747, 354, 147, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]]:
     d = dict()
     d['motif_start_position'] = [m, m, m]
     d['title'] = "all_zymo_cytosine"
@@ -128,7 +128,7 @@ j = {
     "model_type": "ReLUthreeLayer",
     "sites": []
 }
-for m in [[747, 354, 148, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]]:
+for m in [[747, 354, 147, 796, 289, 363, 755, 626, 813, 653, 525, 80, 874]]:
     d = dict()
     d['motif_start_position'] = [m, m, m]
     d['title'] = "all_zymo_motifs"
@@ -141,7 +141,7 @@ j = {
     "model_type": "ReLUthreeLayer",
     "sites": []
 }
-for m in [[11, 62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]]:
+for m in [[62, 87, 218, 295, 371, 383, 457, 518, 740, 785, 805, 842, 866]]:
     d = dict()
     d['motif_start_position'] = [m, m, m]
     d['title'] = "all_zymo_null"

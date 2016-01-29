@@ -97,6 +97,7 @@ def main(args):
 #    Starting Neural Net analysis for {title}
 #    Command line: {cmd}
 #    Config file: {config}
+#    Importing models from {models}
 #    Looking at {nbFiles} files.
 #    Using events from strand {strand}
 #    Network type: {type}
@@ -115,7 +116,7 @@ def main(args):
                                 train_test=args.split, out=args.out, epochs=args.epochs, center=args.preprocess,
                                 L1=args.L1, L2=args.L2, type=config['model_type'], dims=config['hidden_dim'],
                                 nb_events=args.events,cmd=" ".join(sys.argv[:]), title=config['experiment_name'],
-                                batch=batch_size, algo=args.learning_algo,
+                                batch=batch_size, algo=args.learning_algo, models=args.model_file,
                                 feature_set=args.features, config=args.config)
 
     print >> sys.stdout, start_message

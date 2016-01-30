@@ -20,8 +20,7 @@ S'motif_start_position'
 p11
 (lp12
 (lp13
-I11
-aI62
+I62
 aI87
 aI218
 aI295

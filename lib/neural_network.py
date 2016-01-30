@@ -33,11 +33,14 @@ def predict(test_data, true_labels, batch_size, model, model_file=None):
                                 outputs=model.errors(y),
                                 )
     errors = [error_fcn(test_data[x * batch_size: (x + 1) * batch_size],
-                        true_labels[x * batch_size: (x + 1) * batch_size]
-                        ) for x in xrange(n_test_batches)]
+                        true_labels[x * batch_size: (x + 1) * batch_size])
+              for x in xrange(n_test_batches)]
+
     probs = [prob_fcn(test_data[x * batch_size: (x + 1) * batch_size])
              for x in xrange(n_test_batches)]
+
     probs = list(chain(*probs))
+    
     return errors, probs
 
 
@@ -186,6 +189,7 @@ def classify_with_network3(
         errors, probs = predict(prc_test, test_targets, training_routine_args['batch_size'], net,
                                 model_file=summary['best_model'])
         errors = 1 - np.mean(errors)
+        probs = zip(probs, test_targets)
 
         print("{0}: {1} test accuracy.".format(title, (errors * 100)))
         out_file.write("{}\n".format(errors))

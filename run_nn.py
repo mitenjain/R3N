@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Run a SVM on collected alignment data
+"""Run a Neural Network on collected alignment data
 """
 import sys
 import cPickle

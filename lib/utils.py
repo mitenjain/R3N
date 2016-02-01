@@ -104,7 +104,7 @@ def get_nb_features(feature_set):
 def collect_data_vectors2(events_per_pos, label, portion, files, strand,
                           motif_starts, dataset_title,
                           max_samples,
-                          feature_set=None, kmer_length=6):
+                          feature_set=None, kmer_length=6, split_dataset=True):
     assert(portion < 1.0 and max_samples >= 1)
     # collect the files
     tsvs = [x for x in glob.glob(files) if os.stat(x).st_size != 0]
@@ -164,14 +164,17 @@ def collect_data_vectors2(events_per_pos, label, portion, files, strand,
     total_vectors = len(dataset)
     labels = np.full(shape=[1, total_vectors], fill_value=label, dtype=np.int32)
 
-    train_split = int(portion * total_vectors)
-    xtrain_split = int(train_split + 0.5 * ((1 - portion) * total_vectors))
+    if split_dataset is True:
+        train_split = int(portion * total_vectors)
+        xtrain_split = int(train_split + 0.5 * ((1 - portion) * total_vectors))
 
-    np.random.shuffle(dataset)
+        np.random.shuffle(dataset)
 
-    return (np.asarray(dataset[:train_split]), labels[0][:train_split]), \
-           (np.asarray(dataset[train_split:xtrain_split]), labels[0][train_split:xtrain_split]), \
-           (np.asarray(dataset[xtrain_split:]), labels[0][xtrain_split:])
+        return (np.asarray(dataset[:train_split]), labels[0][:train_split]), \
+               (np.asarray(dataset[train_split:xtrain_split]), labels[0][train_split:xtrain_split]), \
+               (np.asarray(dataset[xtrain_split:]), labels[0][xtrain_split:])
+    else:
+        return np.asarray(dataset), labels[0]
 
 
 def shuffle_and_maintain_labels(data, labels):

@@ -40,7 +40,7 @@ def predict(test_data, true_labels, batch_size, model, model_file=None):
              for x in xrange(n_test_batches)]
 
     probs = list(chain(*probs))
-    
+
     return errors, probs
 
 
@@ -161,7 +161,11 @@ def classify_with_network3(
         # shuffle data
         X, y = shuffle_and_maintain_labels(prc_train, training_labels)
 
-        trained_model_dir = "{0}/{1}_Models/".format(os.path.abspath(out_path), title)
+        working_directory_path = "{outpath}/{title}_Models/".format(outpath=out_path, title=title)
+        if not os.path.exists(working_directory_path):
+            os.makedirs(working_directory_path)
+        trained_model_dir = "{workingdirpath}{iteration}/".format(workingdirpath=working_directory_path,
+                                                                  iteration=i)
 
         training_routine_args = {
             "motif": title,
@@ -191,7 +195,7 @@ def classify_with_network3(
         errors = 1 - np.mean(errors)
         probs = zip(probs, test_targets)
 
-        print("{0}: {1} test accuracy.".format(title, (errors * 100)))
+        print("{0}{1}: {2} test accuracy.".format(title, i, (errors * 100)))
         out_file.write("{}\n".format(errors))
         scores.append(errors)
 
@@ -325,3 +329,44 @@ def classify_with_network2(
 
     print(">{motif}\t{accuracy}".format(motif=title, accuracy=np.mean(scores), end="\n"), file=out_file)
     return net
+
+
+def test_error_distribution3(# alignment files
+        group_1, group_2, group_3,  # these arguments should be strings that are used as the file suffix
+        # which data to use
+        strand, motif_start_positions, preprocess, events_per_pos, feature_set, title,
+        # training params
+        learning_algorithm, train_test_split, iterations, epochs, max_samples, batch_size,
+        # model params
+        learning_rate, L1_reg, L2_reg, hidden_dim, model_type, model_dir=None, extra_args=None,
+        # output params
+        out_path="./"):
+    raise NotImplementedError
+    # checks and file IO
+    assert(len(motif_start_positions) >= 3)
+    out_file = open(out_path + title + ".tsv", 'wa')
+
+    scores = []
+
+    # get the whole dataset for the 3 groups
+    list_of_datasets = []
+    add_to_list = list_of_datasets.append
+
+    collect_data_vectors_args = {
+        "events_per_pos": events_per_pos,
+        "portion": train_test_split,
+        "strand": strand,
+        "max_samples": max_samples,
+        "feature_set": feature_set,
+        "kmer_length": 6,
+        "split_dataset": False,
+    }
+    # makes a list of tuples [(dataset_1, labels_1),..., (dataset_3, labels_3)] for group 1-3
+    for n, group in enumerate((group_1, group_2, group_3)):
+        dataset, labels = collect_data_vectors2(label=n,
+                                                files=group,
+                                                motif_starts=motif_start_positions[n],
+                                                dataset_title=title + "_group{}".format(n),
+                                                **collect_data_vectors_args)
+        add_to_list((dataset, labels))
+    #

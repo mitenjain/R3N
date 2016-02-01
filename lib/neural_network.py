@@ -195,7 +195,7 @@ def classify_with_network3(
         errors = 1 - np.mean(errors)
         probs = zip(probs, test_targets)
 
-        print("{0}{1}: {2} test accuracy.".format(title, i, (errors * 100)))
+        print("{0}:{1}:{2} test accuracy.".format(title, i, (errors * 100)))
         out_file.write("{}\n".format(errors))
         scores.append(errors)
 

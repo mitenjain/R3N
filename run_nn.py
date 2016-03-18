@@ -80,7 +80,7 @@ def run_nn2(work_queue, done_queue):
 def main(args):
     args = parse_args()
 
-    assert(args.features in [None, "mean", "noise", "all"]), "invalid feature subset selection"
+    assert(args.features in [None, "dmean", "noise", "all", "mean"]), "invalid feature subset selection"
 
     config = cPickle.load(open(args.config, 'r'))
 

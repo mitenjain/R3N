@@ -21,9 +21,8 @@ def get_motif_range(motifs, kmer_length=6):
 
 
 def cull_motif_features4(motif, tsv, strand, feature_set=None, kmer_length=6):
-
     try:
-        data = pd.read_table(tsv, usecols=(1, 4, 5, 6, 7, 10, 11, 12),
+        data = pd.read_table(tsv, usecols=(1, 4, 5, 6, 7, 10, 11, 12, 13),
                              dtype={'ref_pos': np.int32,
                                     'event_idx': np.int32,
                                     'strand': np.str,
@@ -31,10 +30,11 @@ def cull_motif_features4(motif, tsv, strand, feature_set=None, kmer_length=6):
                                     'event_noise': np.float64,
                                     'prob': np.float64,
                                     'E_mean': np.float64,
-                                    'E_noise': np.float64},
+                                    'E_noise': np.float64,
+                                    'descaled_mean': np.float64},
                              header=None,
                              names=['ref_pos', 'strand', 'event_idx', 'event_mean',
-                                    'event_noise', 'E_mean', 'E_noise', 'prob']
+                                    'event_noise', 'E_mean', 'E_noise', 'prob', 'descaled_mean']
                              )
 
         motif_events = get_motif_range(motif, kmer_length=kmer_length)
@@ -44,7 +44,7 @@ def cull_motif_features4(motif, tsv, strand, feature_set=None, kmer_length=6):
         else:
             motif_rows = data.ix[(data['ref_pos'].isin(motif_events))]
 
-        if feature_set == "mean":
+        if feature_set == "dmean":
             features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
                                      "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
                                      "strand": motif_rows['strand']}
@@ -53,7 +53,16 @@ def cull_motif_features4(motif, tsv, strand, feature_set=None, kmer_length=6):
             f = features.sort_values(['ref_pos', 'strand'], ascending=[True, False])\
                 .drop_duplicates(subset='delta_mean')
             return f
+        elif feature_set == "mean":
+            features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
+                                     "delta_mean": motif_rows['descaled_mean'],
+                                     "posterior": motif_rows['prob'],
+                                     "strand": motif_rows['strand']}
+                                    )
 
+            f = features.sort_values(['ref_pos', 'strand'], ascending=[True, False])\
+                .drop_duplicates(subset='delta_mean')
+            return f
         elif feature_set == "all":
             features = pd.DataFrame({"ref_pos": motif_rows['ref_pos'],
                                      "delta_mean": motif_rows['event_mean'] - motif_rows['E_mean'],
@@ -92,10 +101,10 @@ def cull_motif_features4(motif, tsv, strand, feature_set=None, kmer_length=6):
 
 
 def get_nb_features(feature_set):
-    assert(feature_set in ['all', 'mean', 'noise', None]), "invalid feature set"
-    if feature_set == "mean":
+    assert(feature_set in ['all', 'dmean', 'noise', 'mean', None]), "invalid feature set"
+    if feature_set == "dmean":
         return 1
-    elif feature_set == "noise" or feature_set is None:
+    elif feature_set == "noise" or feature_set == "mean" or feature_set is None:
         return 2
     else:
         return 3
